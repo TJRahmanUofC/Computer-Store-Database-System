@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Login - Byte Hub</title>
+    <link rel="stylesheet" href="../assets/css/styles.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"/>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <img src="../assets/images/logo.png" alt="Site Logo" class="logo-image" width="100" height="50"/>
+            <span class="site-name">Byte Hub</span>
+        </div>
+        <nav>
+            <a href="../index.html">Home</a>
+            <a href="product-listing.html">Products</a>
+            <a href="#">Order</a>
+            <a href="login.html">Login</a>
+        </nav>
+        <div class="header-icons">
+            <a href="cart.html">
+                <div>
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count">Cart (0)</span>
+                </div>
+            </a>
+        </div>
+    </header>
+
+    <!-- Login Section -->
+    <section class="login-section">
+        <div class="login-container">
+            <h2 id="login-heading">Login</h2>
+            <p id="login-error" class="error-message"></p>
+            <form id="login-form">
+                <label for="email">Email:</label>
+                <input type="email" id="email" required>
+                
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+                
+                <button type="submit" class="login-button">Login</button>
+            </form>
+            <button id="logout-button" class="logout-button" style="display: none;">Logout</button>
+            <p id="register-link">Don't have an account? <a href="register.html">Register here</a></p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="payment-methods">
+                <p>We Accept:</p>
+                <div>
+                    <img src="../assets/images/Visa.png" alt="Visa" class="payment-logo"/>
+                    <img src="../assets/images/Mastercard.png" alt="MasterCard" class="payment-logo"/>
+                    <img src="../assets/images/American_Express.png" alt="American Express" class="payment-logo"/>
+                </div>
+            </div>
+            <div class="footer-links">
+                <a href="#">Contact Information</a>
+                <div>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms & Conditions</a>
+                </div>
+            </div>
+            <div class="newsletter">
+                <p>Stay In Touch! Join our Newsletter.</p>
+                <div>
+                    <input type="email" placeholder="Enter Email"/>
+                    <button>Subscribe</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../assets/js/login.js"></script>
+</body>
+</html>

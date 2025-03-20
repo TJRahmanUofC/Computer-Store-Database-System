@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Order History - Byte Hub</title>
+    <link rel="stylesheet" href="../assets/css/styles.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"/>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <img src="../assets/images/logo.png" alt="Site Logo" class="logo-image" width="100" height="50"/>
+            <span class="site-name">Byte Hub</span>
+        </div>
+        <nav>
+            <a href="../index.html">Home</a>
+            <a href="product-listing.html">Products</a>
+            <a href="order_history.html">Order</a>
+            <a href="login.html">Login</a>
+        </nav>
+        <div class="header-icons">
+            <i class="fas fa-search"></i>
+            <a href="cart.html">
+                <div>
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count">Cart (0)</span>
+                </div>
+            </a>
+        </div>
+    </header>
+
+    <!-- Order History Section -->
+    <section class="order-history">
+        <h2>Your Order History</h2>
+        <div id="order-history-container">
+            <p>Loading...</p> <!-- JavaScript will replace this with actual order history -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="payment-methods">
+                <p>We Accept:</p>
+                <div>
+                    <img src="../assets/images/Visa.png" alt="Visa" class="payment-logo"/>
+                    <img src="../assets/images/Mastercard.png" alt="MasterCard" class="payment-logo"/>
+                    <img src="../assets/images/American_Express.png" alt="American Express" class="payment-logo"/>
+                </div>
+            </div>
+            <div class="footer-links">
+                <a href="#">Contact Information</a>
+                <div>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms & Conditions</a>
+                </div>
+            </div>
+            <div class="newsletter">
+                <p>Stay In Touch! Join our Newsletter.</p>
+                <div>
+                    <input type="email" placeholder="Enter Email"/>
+                    <button>Subscribe</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../assets/js/order-history.js"></script>
+</body>
+</html>
