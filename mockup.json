@@ -1,0 +1,46 @@
+{
+    "PRODUCT": [
+        {
+            "PRODUCTID": 1,
+            "NAME": "Intel Core i9",
+            "CATEGORY_NAME": "CPU",
+            "PRICE": 599.99,
+            "STOCK": 10
+        },
+        {
+            "PRODUCTID": 2,
+            "NAME": "NVIDIA RTX 4090",
+            "CATEGORY_NAME": "GPU",
+            "PRICE": 1599.99,
+            "STOCK": 5
+        },
+        {
+            "PRODUCTID": 3,
+            "NAME": "ASUS ROG Motherboard",
+            "CATEGORY_NAME": "Motherboard",
+            "PRICE": 299.99,
+            "STOCK": 0
+        },
+        {
+            "PRODUCTID": 4,
+            "NAME": "Corsair Vengeance RAM 32GB",
+            "CATEGORY_NAME": "Memory",
+            "PRICE": 149.99,
+            "STOCK": 20
+        },
+        {
+            "PRODUCTID": 5,
+            "NAME": "Samsung 980 Pro SSD 1TB",
+            "CATEGORY_NAME": "Storage",
+            "PRICE": 189.99,
+            "STOCK": 15
+        },
+        {
+            "PRODUCTID": 6,
+            "NAME": "Corsair RM850x PSU",
+            "CATEGORY_NAME": "Power Supply",
+            "PRICE": 149.99,
+            "STOCK": 8
+        }
+    ]
+}

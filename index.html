@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Byte Hub - Home</title>
+    <link href="assets/css/styles.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <img src="assets/images/logo.png" alt="Site Logo" class="logo-image" width="100" height="50"/>
+            <span class="site-name">Byte Hub</span>
+        </div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="customer/product-listing.html">Products</a>
+            <a href="customer/order_history.html">Order</a>
+            <a href="customer/login.html">Login</a>
+        </nav>
+        <div class="header-icons">
+            <!-- <i class="fas fa-search"></i> -->
+            <a href="customer/cart.html">
+                <div>
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count">Cart (0)</span>
+                </div>
+            </a>
+        </div>
+    </header>
+
+    <!-- Featured Products -->
+    <section class="featured-products">
+        <h2>Welcome to Byte Hub</h2>
+        <p>Your one-stop shop for all your computer needs.</p>
+        <div class="product-images">
+            <img alt="Sale" src="assets/images/deals.png"/>
+        </div>
+        <p>TOP SELLING DEALS. LIMITED TIME ONLY!!!</p>
+        <div>
+            <a href="customer/product-listing.html">
+                <button class="browse-button">Browse Products</button>
+            </a>
+        </div>
+    </section>
+
+    <!-- New Arrivals (Dynamic) -->
+    <section class="new-arrivals">
+        <h2>NEW ARRIVALS</h2>
+        <div class="product-grid" id="new-arrivals">
+            <p>Loading new arrivals...</p> <!-- JS will replace this -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="payment-methods">
+                <p>We Accept:</p>
+                <div>
+                    <img src="assets/images/Visa.png" alt="Visa" class="payment-logo"/>
+                    <img src="assets/images/Mastercard.png" alt="MasterCard" class="payment-logo"/>
+                    <img src="assets/images/American_Express.png" alt="American Express" class="payment-logo"/>
+                </div>
+            </div>
+            <div class="footer-links">
+                <a href="#">Contact Information</a>
+                <div>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms & Conditions</a>
+                </div>
+            </div>
+            <div class="newsletter">
+                <p>Stay In Touch! Join our Newsletter.</p>
+                <div>
+                    <input placeholder="Enter Email" type="email"/>
+                    <button>Subscribe</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Persistent Cart Count -->
+    <script>
+        function updateCartCount() {
+            let cart = JSON.parse(localStorage.getItem("cart")) || [];
+            let cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+            document.getElementById("cart-count").textContent = `Cart (${cartCount})`;
+        }
+
+        document.addEventListener("DOMContentLoaded", updateCartCount);
+    </script>
+</body>
+<script src="index.js"></script>
+</html>
