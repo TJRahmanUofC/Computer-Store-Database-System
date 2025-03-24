@@ -1,46 +1,146 @@
 {
+    "STORE": [
+      {
+        "STOREID": 255,
+        "LOCATION": "255 University Drive, Calgary, AB",
+        "NAME": "Victor Von Doom Hardwares",
+        "PHONE": 123459876,
+        "MANAGER_ID": 1000
+      }
+    ],
+    "PERSON": [
+      {
+        "SSN": 54128,
+        "NAME": "Jane Doe",
+        "PHONE": 123456789,
+        "ADDRESS": "12th DoLittle St, Calgary, AB"
+      },
+      {
+        "SSN": 54529,
+        "NAME": "John Smith",
+        "PHONE": 213456789,
+        "ADDRESS": "2nd Roosevelt Lane, Vancouver, BC"
+      }
+    ],
+    "CUSTOMER": [
+      {
+        "EMAIL": "jane.doe@hotmail.com",
+        "SSN": 54128
+      },
+      {
+        "EMAIL": "m.masters@gmail.com",
+        "SSN": 74159
+      }
+    ],
+    "EMPLOYEE": [
+      {
+        "EMPLOYEE_ID": 1000,
+        "SSN": 54128,
+        "ROLE": "Manager",
+        "STOREID": 149
+      },
+      {
+        "EMPLOYEE_ID": 148,
+        "SSN": 96415,
+        "ROLE": "Customer Service",
+        "STOREID": 100
+      }
+    ],
+    "ORDERS": [
+      {
+        "ORDER_ID": 100,
+        "ORDER_DATE": "2012-01-01",
+        "EMAIL": "jane.doe@hotmail.com",
+        "EMPLOYEE_ID": 148
+      },
+      {
+        "ORDER_ID": 956,
+        "ORDER_DATE": "2021-08-24",
+        "EMAIL": "m.masters@gmail.com",
+        "EMPLOYEE_ID": 500
+      }
+    ],
+    "CATEGORY": [
+      {
+        "CATEGORY_NAME": "Processor",
+        "GENERATION": 7
+      },
+      {
+        "CATEGORY_NAME": "Graphics Card",
+        "GENERATION": 7
+      }
+    ],
+    "SUPPLIER": [
+      {
+        "SUPPLIER_ID": 15,
+        "NAME": "Arasaka"
+      },
+      {
+        "SUPPLIER_ID": 7,
+        "NAME": "Dell"
+      }
+    ],
+    "SUPPLIER_DELIVERY": [
+      {
+        "DELIVERY_NO": 2,
+        "SUPPLIER_ID": 741,
+        "STATUS": "Delivered",
+        "DELIVERY_DATE": "2011-12-12"
+      }
+    ],
+    "PAYMENT": [
+      {
+        "PAYMENT_NO": 1,
+        "PAYMENT_TYPE": "Cash",
+        "AMOUNT": 999,
+        "DATE": "2019-06-19"
+      }
+    ],
     "PRODUCT": [
-        {
-            "PRODUCTID": 1,
-            "NAME": "Intel Core i9",
-            "CATEGORY_NAME": "CPU",
-            "PRICE": 599.99,
-            "STOCK": 10
-        },
-        {
-            "PRODUCTID": 2,
-            "NAME": "NVIDIA RTX 4090",
-            "CATEGORY_NAME": "GPU",
-            "PRICE": 1599.99,
-            "STOCK": 5
-        },
-        {
-            "PRODUCTID": 3,
-            "NAME": "ASUS ROG Motherboard",
-            "CATEGORY_NAME": "Motherboard",
-            "PRICE": 299.99,
-            "STOCK": 0
-        },
-        {
-            "PRODUCTID": 4,
-            "NAME": "Corsair Vengeance RAM 32GB",
-            "CATEGORY_NAME": "Memory",
-            "PRICE": 149.99,
-            "STOCK": 20
-        },
-        {
-            "PRODUCTID": 5,
-            "NAME": "Samsung 980 Pro SSD 1TB",
-            "CATEGORY_NAME": "Storage",
-            "PRICE": 189.99,
-            "STOCK": 15
-        },
-        {
-            "PRODUCTID": 6,
-            "NAME": "Corsair RM850x PSU",
-            "CATEGORY_NAME": "Power Supply",
-            "PRICE": 149.99,
-            "STOCK": 8
-        }
+      {
+        "PRODUCTID": 1,
+        "NAME": "Core i7",
+        "PRICE": 999,
+        "ORDER_ID_CONTAINS": 7415,
+        "CATEGORY_NAME": "Processor",
+        "STOREID": 255,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24,
+        "NO_OF_PRODUCTS": 8
+      },
+      {
+        "PRODUCTID": 50,
+        "NAME": "RX 7600XTX",
+        "PRICE": 2000,
+        "ORDER_ID_CONTAINS": 100,
+        "CATEGORY_NAME": "Graphics Card",
+        "STOREID": 50,
+        "SUPPLIER_ID": 741,
+        "DELIVERY_NO": 2,
+        "NO_OF_PRODUCTS": 1
+      }
+    ],
+    "INVENTORY": [
+      {
+        "INVENTORY_ID": 1,
+        "STOCK_LEVEL": 8,
+        "LAST_UPDATED": "2024-03-15"
+      }
+    ],
+    "MAKES_PAYMENT": [
+      {
+        "PAYMENT_NO": 1,
+        "ORDER_ID": 7415,
+        "EMAIL": "m.masters@gmail.com"
+      }
+    ],
+    "UPDATES": [
+      {
+        "EMPLOYEE_ID": 148,
+        "INVENTORY_ID": 1,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24
+      }
     ]
-}
+  }
+  
