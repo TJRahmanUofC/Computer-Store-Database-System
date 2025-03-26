@@ -26,6 +26,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("product-stock").textContent = `Stock: ${product.STOCK > 0 ? "In Stock" : "Out of Stock"}`;
                 document.getElementById("product-description").textContent = "High-quality component for optimal performance.";
 
+                // add product locations to the product page
+                const locations = product.LOCATIONS.join(", ");
+                document.getElementById("product-locations").innerHTML = `<strong>Available at:</strong> ${locations}`;
+
                 // Update "Add to Cart" button
                 const addToCartButton = document.getElementById("add-to-cart");
                 if (product.STOCK === 0) {
