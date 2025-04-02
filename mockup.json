@@ -42,6 +42,16 @@
             "PRICE": 149.99,
             "STOCK": 8
         }
+    ],
+    "ADMIN": [
+        {
+            "USERNAME": "admin1",
+            "PASSWORD": "123"
+        },
+        {
+            "USERNAME": "admin2",
+            "PASSWORD": "456"
+        }
     ]
   }
   
