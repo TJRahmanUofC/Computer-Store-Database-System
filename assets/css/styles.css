@@ -949,4 +949,35 @@ h2 {
     margin-bottom: 0.5rem;
 }
 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    margin-top: 50px;
+}
+
+.dashboard-button {
+    padding: 15px 30px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    text-align: center;
+    width: 250px;
+}
+
+.dashboard-button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+.dashboard-button:active {
+    background-color: #003f7f;
+    transform: scale(0.98);
+}
+
 

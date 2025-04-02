@@ -52,6 +52,15 @@
             "USERNAME": "admin2",
             "PASSWORD": "456"
         }
+    ],
+    "EMPLOYEE": [
+        {
+            "EMPLOYEEID": "E001",
+            "EMPLOYEENAME": "John Doe"
+        },
+        {
+            "EMPLOYEEID": "E002",
+            "EMPLOYEENAME": "Jane Smith"
+        }
     ]
-  }
-  
+}
