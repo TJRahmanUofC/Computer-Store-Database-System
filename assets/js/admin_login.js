@@ -1,26 +1,25 @@
 function validateAdminLogin(event) {
     event.preventDefault(); // Prevent form submission
 
-    // setup for login temporary until we deceide how we want to handle admin login
-    const username = document.getElementById("admin-username").value; // ustilzing employee name as username for login
-    const password = document.getElementById("admin-password").value; // utilizing employee id as password for login
+    const username = document.getElementById("admin-username").value;
+    const password = document.getElementById("admin-password").value;
 
-    // Fetch employee credentials from mockup.json
+    // Fetch admin credentials from mockup.json
     fetch("../mockup.json")
         .then(response => {
             if (!response.ok) {
-                throw new Error(`Failed to load employee data: ${response.status} ${response.statusText}`);
+                throw new Error("Failed to load admin data");
             }
             return response.json();
         })
         .then(data => {
-            const employee = data.EMPLOYEE.find(
-                emp => emp.EMPLOYEENAME === username && emp.EMPLOYEEID === password
+            const admin = data.ADMIN.find(
+                admin => admin.USERNAME === username && admin.PASSWORD === password
             );
 
-            if (employee) {
+            if (admin) {
                 alert("Login successful!");
-                window.location.href = "dashboard.html"; // Redirect to dashboard.html
+                window.location.href = "admin_dashboard.html"; // Redirect to admin dashboard
             } else {
                 alert("Invalid username or password. Please try again.");
             }
