@@ -13,16 +13,21 @@ document.addEventListener("DOMContentLoaded", function () {
             function renderProducts(products) {
                 productList.innerHTML = ""; // Clear existing content
                 products.forEach(product => {
+                    // Construct image path safely
+                    let imageName = product.NAME.toLowerCase().replace(/ /g, "_") + ".jpg";
+                    let imagePath = `../assets/images/${imageName}`;
+
                     productList.innerHTML += `
                         <div class="product-card">
-                            <img src="../assets/images/${product.NAME.toLowerCase().replace(/ /g, "_")}.jpg" alt="${product.NAME}">
+                            <img src="${imagePath}" alt="${product.NAME}" 
+                                onerror="this.onerror=null; this.src='../assets/images/default.jpg';">
                             <h3>${product.NAME}</h3>
                             <p>Category: ${product.CATEGORY_NAME}</p>
                             <p class="price">$${product.PRICE}</p>
-                            <p class="stock-status">${product.STOCK > 0 ? "In Stock" : "Out of Stock"}</p>
+                            <p class="stock-status">${product.NO_OF_PRODUCTS > 0 ? "In Stock" : "Out of Stock"}</p>
                             <a href="product.html?id=${product.PRODUCTID}" class="view-button">View Details</a>
-                            <button class="add-to-cart" data-product-id="${product.PRODUCTID}" ${product.STOCK === 0 ? "disabled" : ""}>
-                                ${product.STOCK > 0 ? "Add to Cart" : "Out of Stock"}
+                            <button class="add-to-cart" data-product-id="${product.PRODUCTID}" ${product.NO_OF_PRODUCTS === 0 ? "disabled" : ""}>
+                                ${product.NO_OF_PRODUCTS > 0 ? "Add to Cart" : "Out of Stock"}
                             </button>
                         </div>
                     `;
@@ -80,5 +85,9 @@ function addToCart(product) {
 function updateCartCount() {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
     let cartCount = cart.reduce((total, item) => total + item.quantity, 0);
-    document.getElementById("cart-count").textContent = `Cart (${cartCount})`;
+    let cartCountElement = document.getElementById("cart-count");
+
+    if (cartCountElement) {
+        cartCountElement.textContent = `Cart (${cartCount})`;
+    }
 }
