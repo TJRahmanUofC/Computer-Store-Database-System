@@ -307,6 +307,10 @@ WHERE PRODUCTID=2;
 DELETE FROM SUPPLIER_DELIVERY
 WHERE STATUS='NOT DELIVERED';
 
+-- Delete products belonging to categories with GENERATION=3 first due to foreign key constraint
+DELETE FROM PRODUCT
+WHERE CATEGORY_NAME IN (SELECT CATEGORY_NAME FROM CATEGORY WHERE GENERATION=3);
+
 -- Products are too old to sell, so we delete them
 DELETE FROM CATEGORY
 WHERE GENERATION=3;
@@ -315,13 +319,22 @@ WHERE GENERATION=3;
 DELETE FROM INVENTORY
 WHERE STOCK_LEVEL = 0;
 
--- Delete a store if they have not provided a location BUT are selling products
+-- Delete a store if they have not provided a location
+
+-- Step 1: Break MANAGER_ID dependency for all stores with NULL location
+UPDATE STORE
+SET MANAGER_ID = NULL
+WHERE LOCATION IS NULL;
+
+-- Step 2: Break EMPLOYEE dependency for all stores with NULL location
+UPDATE EMPLOYEE
+SET STOREID = NULL
+WHERE STOREID IN (SELECT STOREID FROM STORE WHERE LOCATION IS NULL);
+
+-- Step 3: Break PRODUCT dependency for all stores with NULL location
+DELETE FROM PRODUCT
+WHERE STOREID IN (SELECT STOREID FROM STORE WHERE LOCATION IS NULL);
+
+-- Step 4: Delete the stores where LOCATION IS NULL (dependencies should now be resolved)
 DELETE FROM STORE
-WHERE LOCATION IS NULL
-AND STOREID IN(
-SELECT DISTINCT STOREID
-FROM PRODUCT
-WHERE STOREID IS NOT NULL
-);
-
-
+WHERE LOCATION IS NULL;
