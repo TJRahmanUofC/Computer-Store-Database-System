@@ -34,6 +34,7 @@
     ],
     "EMPLOYEE": [
       {
+        "NAME": "Jane Doe",
         "EMPLOYEE_ID": 1000,
         "SSN": 54128,
         "ROLE": "Manager",
@@ -78,6 +79,10 @@
       {
         "SUPPLIER_ID": 7,
         "NAME": "Dell"
+      },
+      {
+        "SUPPLIER_ID": 741,
+        "NAME": "AMD"
       }
     ],
     "SUPPLIER_DELIVERY": [
@@ -86,6 +91,24 @@
         "SUPPLIER_ID": 741,
         "STATUS": "Delivered",
         "DELIVERY_DATE": "2011-12-12"
+      },
+      {
+        "DELIVERY_NO": 1,
+        "SUPPLIER_ID": 15,
+        "STATUS": "Arrived",
+        "DELIVERY_DATE": "2025-03-01"
+      },
+      {
+        "DELIVERY_NO": 2,
+        "SUPPLIER_ID": 7,
+        "STATUS": "In Transit",
+        "DELIVERY_DATE": "2025-03-05"
+      },
+      {
+        "DELIVERY_NO": 3,
+        "SUPPLIER_ID": 741,
+        "STATUS": "Arrived",
+        "DELIVERY_DATE": "2025-03-03"
       }
     ],
     "PAYMENT": [
@@ -97,67 +120,6 @@
       }
     ],
     "PRODUCT": [
-<<<<<<< altBranch_Matt
-        {
-            "PRODUCTID": 1,
-            "NAME": "Intel Core i9",
-            "CATEGORY_NAME": "CPU",
-            "PRICE": 599.99,
-            "STOCK": 10,
-            "LOCATIONS": ["Location 1", "Location 2"]
-        },
-        {
-            "PRODUCTID": 2,
-            "NAME": "NVIDIA RTX 4090",
-            "CATEGORY_NAME": "GPU",
-            "PRICE": 1599.99,
-            "STOCK": 5,
-            "LOCATIONS": ["Location 3", "Location 2"]
-        },
-        {
-            "PRODUCTID": 3,
-            "NAME": "ASUS ROG Motherboard",
-            "CATEGORY_NAME": "Motherboard",
-            "PRICE": 299.99,
-            "STOCK": 0,
-            "LOCATIONS": ["Location 1", "Location 3"]
-        },
-        {
-            "PRODUCTID": 4,
-            "NAME": "Corsair Vengeance RAM 32GB",
-            "CATEGORY_NAME": "Memory",
-            "PRICE": 149.99,
-            "STOCK": 20,
-            "LOCATIONS": ["Location 1"]
-
-        },
-        {
-            "PRODUCTID": 5,
-            "NAME": "Samsung 980 Pro SSD 1TB",
-            "CATEGORY_NAME": "Storage",
-            "PRICE": 189.99,
-            "STOCK": 15,
-            "LOCATIONS": ["Location 1", "Location 2", "Location 3"]
-        },
-        {
-            "PRODUCTID": 6,
-            "NAME": "Corsair RM850x PSU",
-            "CATEGORY_NAME": "Power Supply",
-            "PRICE": 149.99,
-            "STOCK": 8,
-            "LOCATIONS": ["Location 1", "Location 2", "Location 3"]
-        }
-    ],
-    "ADMIN": [
-        {
-            "USERNAME": "admin1",
-            "PASSWORD": "123"
-        },
-        {
-            "USERNAME": "admin2",
-            "PASSWORD": "456"
-        }
-=======
       {
         "PRODUCTID": 1,
         "NAME": "Core i7",
@@ -202,7 +164,5 @@
         "SUPPLIER_ID": 15,
         "DELIVERY_NO": 24
       }
->>>>>>> feature/frontend-dev
     ]
   }
-  
