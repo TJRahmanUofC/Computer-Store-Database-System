@@ -19,6 +19,7 @@
             <a href="customer/product-listing.html">Products</a>
             <a href="customer/order_history.html">Order</a>
             <a href="customer/login.html">Login</a>
+            <a href="admin/admin_login.html">Admin</a>
         </nav>
         <div class="header-icons">
             <!-- <i class="fas fa-search"></i> -->
@@ -91,6 +92,25 @@
         }
 
         document.addEventListener("DOMContentLoaded", updateCartCount);
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        // Check database connection
+        fetch('http://127.0.0.1:5000/api/health', { method: 'GET' })
+            .then(response => response.json())
+            .then(data => {
+                    if (!data.success) {
+                        console.error("Health Check Failed:", data.message);
+                        alert("Error: Unable to connect to the database. Please try again later.");
+                    } else {
+                        console.log("Health Check Passed:", data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error("Health Check Error:", error);
+                    alert("Error: Unable to connect to the backend. Please try again later.");
+                });
+        });
     </script>
 </body>
 <script src="index.js"></script>

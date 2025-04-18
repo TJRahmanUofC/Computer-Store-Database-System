@@ -1,65 +1,125 @@
 document.addEventListener("DOMContentLoaded", function () {
     const orderItemsContainer = document.getElementById("order-items");
-    const orderTotal = document.getElementById("order-total");
+    const orderTotalElement = document.getElementById("order-total"); // Renamed for clarity
     const placeOrderButton = document.getElementById("place-order-button");
+    let currentCartItems = []; // To store cart items fetched from API
 
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    // Function to fetch cart and display order summary
+    function fetchAndDisplayOrderSummary() {
+        fetch('http://127.0.0.1:5000/api/cart', { method: 'GET', credentials: 'include' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.cart) {
+                    currentCartItems = data.cart; // Store fetched items
+                    orderItemsContainer.innerHTML = ""; // Clear previous items
+                    let total = 0;
 
-    function displayOrderItems() {
-        orderItemsContainer.innerHTML = "";
-        let total = 0;
+                    if (currentCartItems.length === 0) {
+                        orderItemsContainer.innerHTML = "<p>Your cart is empty. Cannot proceed to checkout.</p>";
+                        placeOrderButton.disabled = true; // Disable button if cart is empty
+                    } else {
+                        currentCartItems.forEach(item => {
+                            const price = parseFloat(item.price) || 0;
+                            const quantity = parseInt(item.quantity) || 0;
+                            const itemTotal = price * quantity;
+                            total += itemTotal;
 
-        if (cart.length === 0) {
-            orderItemsContainer.innerHTML = "<p>Your cart is empty.</p>";
-        } else {
-            cart.forEach(product => {
-                const productTotal = product.PRICE * product.quantity;
-                total += productTotal;
-
-                orderItemsContainer.innerHTML += `
-                    <div class="order-item">
-                        <p>${product.NAME} (x${product.quantity})</p>
-                        <p>$${productTotal.toFixed(2)}</p>
-                    </div>
-                `;
+                            orderItemsContainer.innerHTML += `
+                                <div class="order-item">
+                                    <p>${item.name} (x${quantity})</p>
+                                    <p>$${itemTotal.toFixed(2)}</p>
+                                </div>
+                            `;
+                        });
+                        placeOrderButton.disabled = false; // Enable button if cart has items
+                    }
+                    orderTotalElement.textContent = total.toFixed(2);
+                } else {
+                    orderItemsContainer.innerHTML = "<p>Could not load cart details.</p>";
+                    orderTotalElement.textContent = "0.00";
+                    placeOrderButton.disabled = true;
+                    console.error("Failed to load cart for checkout:", data.message);
+                }
+            })
+            .catch(error => {
+                orderItemsContainer.innerHTML = "<p>Error loading cart details.</p>";
+                orderTotalElement.textContent = "0.00";
+                placeOrderButton.disabled = true;
+                console.error("Error fetching cart for checkout:", error);
             });
-        }
-
-        orderTotal.textContent = total.toFixed(2);
     }
 
+    // Event listener for the Place Order button
     placeOrderButton.addEventListener("click", function () {
         const shippingForm = document.getElementById("shipping-form");
         const paymentForm = document.getElementById("payment-form");
 
+        // Validate both forms
         if (!shippingForm.checkValidity() || !paymentForm.checkValidity()) {
-            alert("Please fill out all fields correctly.");
+            // Trigger browser's built-in validation UI
+            shippingForm.reportValidity();
+            paymentForm.reportValidity();
+            alert("Please fill out all required shipping and payment fields correctly.");
             return;
         }
 
-        const orderData = {
-            orderId: Math.floor(100000 + Math.random() * 900000),
-            date: new Date().toLocaleDateString(),
-            shipping: {
-                fullName: document.getElementById("full-name").value,
-                email: document.getElementById("email").value,
-                address: document.getElementById("address").value,
-                city: document.getElementById("city").value,
-                state: document.getElementById("state").value,
-                zip: document.getElementById("zip").value,
-            },
-            cart: cart,
-            total: parseFloat(orderTotal.textContent),
+        // Check if cart is empty before proceeding
+        if (currentCartItems.length === 0) {
+             alert("Your cart is empty. Please add items before placing an order.");
+             return;
+        }
+
+        // Collect data from forms
+        const shippingData = {
+            full_name: document.getElementById("full-name").value,
+            email: document.getElementById("email").value,
+            address: document.getElementById("address").value,
+            city: document.getElementById("city").value,
+            state: document.getElementById("state").value,
+            zip: document.getElementById("zip").value,
         };
 
-        let orderHistory = JSON.parse(localStorage.getItem("orderHistory")) || [];
-        orderHistory.push(orderData);
-        localStorage.setItem("orderHistory", JSON.stringify(orderHistory));
+        const paymentData = {
+            card_name: document.getElementById("card-name").value,
+            card_number: document.getElementById("card-number").value, // Consider security implications - ideally use a payment gateway
+            expiry: document.getElementById("expiry").value,
+            cvv: document.getElementById("cvv").value, // Consider security implications
+        };
 
-        alert("Order placed successfully!");
-        localStorage.removeItem("cart");
-        window.location.href = "order_confirmation.html";
+        // Prepare the complete order data payload
+        const orderPayload = {
+            shipping_info: shippingData,
+            payment_info: paymentData,
+            // Cart items are typically processed server-side based on the user's session/cart
+            // No need to send currentCartItems again if backend pulls from session cart
+        };
+
+
+        // Send the complete order data to the backend
+        fetch('http://127.0.0.1:5000/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderPayload), // Send the collected data
+            credentials: 'include' // Important for session cookies
+        })
+            .then(response => response.json()) // Always parse JSON, even for errors
+            .then(data => { // Check response status and data.success
+                if (data.success) {
+                    alert("Order placed successfully! Redirecting to confirmation...");
+                    // Clear local cart? Maybe backend handles this after order creation.
+                    // localStorage.removeItem("cart"); // Reconsider if using server-side cart
+                    window.location.href = "order_confirmation.html"; // Redirect on success
+                } else {
+                    // Display specific error from backend if available
+                    alert(`Failed to place order: ${data.message || 'Unknown error'}`);
+                }
+            })
+            .catch(error => {
+                console.error("Error placing order:", error);
+                alert("An error occurred while placing your order. Please try again.");
+            });
     });
 
-    displayOrderItems();
+    // Initial load of order summary
+    fetchAndDisplayOrderSummary();
 });
