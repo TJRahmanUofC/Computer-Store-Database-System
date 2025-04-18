@@ -1,30 +1,44 @@
 document.addEventListener("DOMContentLoaded", function () {
-    let orderHistory = JSON.parse(localStorage.getItem("orderHistory")) || [];
-    let historyContainer = document.getElementById("order-history-container");
+    const historyContainer = document.getElementById("order-history-container");
 
-    if (orderHistory.length === 0) {
-        historyContainer.innerHTML = "<p>No past orders found.</p>";
-    } else {
-        historyContainer.innerHTML = ""; // Clear existing content
+    // Fetch order history from the backend
+    fetch('http://127.0.0.1:5000/api/orders', { method: 'GET', credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const orderHistory = data.orders;
 
-        orderHistory.forEach(order => {
-            let orderHTML = `
-                <div class="order-card">
-                    <h3>Order ID: #${order.orderId}</h3>
-                    <p>Date: ${order.date}</p>
-                    <ul>
-            `;
+                if (orderHistory.length === 0) {
+                    historyContainer.innerHTML = "<p>No past orders found.</p>";
+                } else {
+                    historyContainer.innerHTML = ""; // Clear existing content
 
-            order.cart.forEach(item => {
-                orderHTML += `<li>${item.quantity}x ${item.NAME} - $${(item.PRICE * item.quantity).toFixed(2)}</li>`;
-            });
+                    orderHistory.forEach(order => {
+                        let orderHTML = `
+                            <div class="order-card">
+                                <h3>Order ID: #${order.ORDER_ID}</h3>
+                                <p>Date: ${new Date(order.ORDER_DATE).toLocaleDateString()}</p>
+                                <ul>
+                        `;
 
-            orderHTML += `</ul>
-                    <p><strong>Total: $${order.total.toFixed(2)}</strong></p>
-                </div>
-            `;
+                        order.products.forEach(item => {
+                            orderHTML += `<li>${item.quantity}x ${item.NAME} - $${(item.PRICE * item.quantity).toFixed(2)}</li>`;
+                        });
 
-            historyContainer.innerHTML += orderHTML;
+                        orderHTML += `</ul>
+                                <p><strong>Total: $${order.AMOUNT.toFixed(2)}</strong></p>
+                            </div>
+                        `;
+
+                        historyContainer.innerHTML += orderHTML;
+                    });
+                }
+            } else {
+                historyContainer.innerHTML = `<p>${data.message || "Failed to load order history."}</p>`;
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching order history:", error);
+            historyContainer.innerHTML = "<p>An error occurred while loading order history.</p>";
         });
-    }
 });

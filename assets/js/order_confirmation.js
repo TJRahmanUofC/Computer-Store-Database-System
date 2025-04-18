@@ -1,43 +1,38 @@
 document.addEventListener("DOMContentLoaded", function () {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-    let orderDetailsContainer = document.getElementById("order-details");
+    const orderDetailsContainer = document.getElementById("order-details");
+    const orderIdElement = document.getElementById("order-id");
 
-    // Generate a random order ID
-    let orderId = Math.floor(100000 + Math.random() * 900000);
-    let orderDate = new Date().toLocaleDateString();
-    document.getElementById("order-id").textContent = `#${orderId}`;
+    // Fetch the latest order details from the backend
+    fetch('/api/orders', { method: 'GET', credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.orders.length > 0) {
+                const latestOrder = data.orders[0]; // Assuming the latest order is the first one
+                const orderId = latestOrder.ORDER_ID;
+                const orderDate = new Date(latestOrder.ORDER_DATE).toLocaleDateString();
+                const items = latestOrder.products;
+                const totalAmount = latestOrder.AMOUNT;
 
-    if (cart.length === 0) {
-        orderDetailsContainer.innerHTML = "<p>No items found. Please place an order first.</p>";
-    } else {
-        orderDetailsContainer.innerHTML = "<ul>";
-        let totalAmount = 0;
+                orderIdElement.textContent = `#${orderId}`;
+                orderDetailsContainer.innerHTML = "<ul>";
 
-        cart.forEach(item => {
-            totalAmount += item.PRICE * item.quantity;
-            orderDetailsContainer.innerHTML += `
-                <li>
-                    ${item.quantity}x ${item.NAME} - $${(item.PRICE * item.quantity).toFixed(2)}
-                </li>
-            `;
+                items.forEach(item => {
+                    orderDetailsContainer.innerHTML += `
+                        <li>
+                            ${item.quantity}x ${item.NAME} - $${(item.PRICE * item.quantity).toFixed(2)}
+                        </li>
+                    `;
+                });
+
+                orderDetailsContainer.innerHTML += `</ul><p><strong>Total: $${totalAmount.toFixed(2)}</strong></p>`;
+            } else {
+                orderDetailsContainer.innerHTML = "<p>No recent order found. Please place an order first.</p>";
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching order details:", error);
+            orderDetailsContainer.innerHTML = "<p>An error occurred while loading order details.</p>";
         });
-
-        orderDetailsContainer.innerHTML += `</ul><p><strong>Total: $${totalAmount.toFixed(2)}</strong></p>`;
-
-        // Store the order in localStorage (temporary database)
-        let orderHistory = JSON.parse(localStorage.getItem("orderHistory")) || [];
-        orderHistory.push({
-            orderId: orderId,
-            date: orderDate,
-            items: cart,
-            total: totalAmount
-        });
-        localStorage.setItem("orderHistory", JSON.stringify(orderHistory));
-
-        // Clear the cart after confirming the order
-        localStorage.removeItem("cart");
-        updateCartCount();
-    }
 });
 
 // Update cart count in header

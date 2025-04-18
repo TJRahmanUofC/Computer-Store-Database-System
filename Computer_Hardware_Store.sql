@@ -1,340 +1,297 @@
-DROP DATABASE IF EXISTS Computer_Hardware_Store;
-CREATE DATABASE Computer_Hardware_Store;
+-- Computer_Hardware_Store_FULL_DATABASE.sql
+-- Contains: Schema, Sample Data, Indexes, Triggers, and Security
 
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
+
+-- 1. Database Setup
+DROP DATABASE IF EXISTS Computer_Hardware_Store;
+CREATE DATABASE Computer_Hardware_Store CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE Computer_Hardware_Store;
 
+-- =====================
+-- 2. SCHEMA DEFINITION
+-- =====================
 
 CREATE TABLE STORE(
-                   STOREID INTEGER PRIMARY KEY,
-                   LOCATION VARCHAR(255),
-                   NAME VARCHAR(255) NOT NULL,
-                   PHONE INTEGER UNIQUE,
-                   MANAGER_ID INTEGER
-                   );
+    STOREID INTEGER PRIMARY KEY,
+    LOCATION VARCHAR(255),
+    NAME VARCHAR(255) NOT NULL,
+    PHONE INTEGER UNIQUE,
+    MANAGER_ID INTEGER
+);
 
 CREATE TABLE PERSON(
-                   SSN INTEGER PRIMARY KEY,
-                   NAME VARCHAR(255) NOT NULL,
-                   PHONE INTEGER UNIQUE,
-                   ADDRESS VARCHAR(255) NOT NULL
-                   );
+    SSN INTEGER PRIMARY KEY COMMENT 'For non-SSN users: SHA256(email)[:9] converted to integer',
+    NAME VARCHAR(255) NOT NULL,
+    PHONE INTEGER UNIQUE,
+    ADDRESS VARCHAR(255) NOT NULL,
+    is_synthetic_ssn BOOLEAN DEFAULT FALSE COMMENT 'TRUE for auto-generated SSNs'
+);
 
 CREATE TABLE CUSTOMER(
-                   EMAIL VARCHAR(255) PRIMARY KEY,
-                   SSN INTEGER NOT NULL,
-                   FOREIGN KEY (SSN) REFERENCES PERSON (SSN)
-                   );
-                   
- CREATE TABLE EMPLOYEE( 
-                   EMPLOYEE_ID INTEGER PRIMARY KEY ,
-                   SSN INTEGER NOT NULL,
-                   ROLE VARCHAR(50),
-                   STOREID INTEGER,
-                   FOREIGN KEY (SSN) REFERENCES PERSON (SSN),
-                   FOREIGN KEY (STOREID) REFERENCES STORE (STOREID)
-                   );
+    EMAIL VARCHAR(255) PRIMARY KEY,
+    SSN INTEGER NOT NULL,
+    PASSWORD_HASH VARCHAR(512) NOT NULL COMMENT 'Raw SHA-256 hash',
+    FOREIGN KEY (SSN) REFERENCES PERSON (SSN)
+);
 
-ALTER TABLE STORE
-ADD CONSTRAINT fk_manager
-FOREIGN KEY (MANAGER_ID) REFERENCES EMPLOYEE (EMPLOYEE_ID);
+CREATE TABLE EMPLOYEE( 
+    EMPLOYEE_ID INTEGER PRIMARY KEY,
+    SSN INTEGER NOT NULL,
+    ROLE VARCHAR(50),
+    STOREID INTEGER,
+    PASSWORD_HASH VARCHAR(512), -- Raw SHA-256 hash
+    FOREIGN KEY (SSN) REFERENCES PERSON (SSN),
+    FOREIGN KEY (STOREID) REFERENCES STORE (STOREID)
+);
 
 CREATE TABLE ORDERS(
-                   ORDER_ID INTEGER PRIMARY KEY ,
-                   ORDER_DATE DATE NOT NULL,
-                   EMAIL VARCHAR(255),
-                   EMPLOYEE_ID INTEGER,
-                   FOREIGN KEY (EMAIL) REFERENCES CUSTOMER (EMAIL),
-                   FOREIGN KEY (EMPLOYEE_ID) REFERENCES EMPLOYEE (EMPLOYEE_ID)
-                   );
-                   
+    ORDER_ID INTEGER PRIMARY KEY AUTO_INCREMENT, -- Added AUTO_INCREMENT
+    ORDER_DATE DATE NOT NULL,
+    EMAIL VARCHAR(255),
+    EMPLOYEE_ID INTEGER,
+    STATUS VARCHAR(20) DEFAULT 'Processing',
+    FOREIGN KEY (EMAIL) REFERENCES CUSTOMER (EMAIL),
+    FOREIGN KEY (EMPLOYEE_ID) REFERENCES EMPLOYEE (EMPLOYEE_ID)
+);
+
 CREATE TABLE CATEGORY(
-                   CATEGORY_NAME VARCHAR(255) PRIMARY KEY,
-                   GENERATION INTEGER
-                   );
+    CATEGORY_NAME VARCHAR(255) PRIMARY KEY,
+    GENERATION INTEGER
+);
+
 CREATE TABLE SUPPLIER(
-                   SUPPLIER_ID INTEGER PRIMARY KEY,
-                   NAME VARCHAR(255) NOT NULL
-                   );
-                   
- CREATE TABLE SUPPLIER_DELIVERY(
-                   DELIVERY_NO INTEGER PRIMARY KEY,
-                   SUPPLIER_ID INTEGER,
-                   STATUS VARCHAR(255),
-                   DELIVERY_DATE DATE NOT NULL,
-                   FOREIGN KEY (SUPPLIER_ID) REFERENCES SUPPLIER (SUPPLIER_ID)
-                   );  
-                   
+    SUPPLIER_ID INTEGER PRIMARY KEY,
+    NAME VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE SUPPLIER_DELIVERY(
+    DELIVERY_NO INTEGER PRIMARY KEY,
+    SUPPLIER_ID INTEGER,
+    STATUS VARCHAR(255),
+    DELIVERY_DATE DATE NOT NULL,
+    FOREIGN KEY (SUPPLIER_ID) REFERENCES SUPPLIER (SUPPLIER_ID)
+);
+
 CREATE TABLE PRODUCT(
-                   PRODUCTID INTEGER PRIMARY KEY ,
-                   NAME VARCHAR(255),
-                   PRICE INTEGER,
-                   ORDER_ID_CONTAINS INTEGER,
-                   CATEGORY_NAME VARCHAR(255),
-                   STOREID INTEGER NOT NULL,
-                   SUPPLIER_ID INTEGER NOT NULL,
-                   DELIVERY_NO INTEGER NOT NULL,
-                   NO_OF_PRODUCTS INTEGER,
-                   FOREIGN KEY (ORDER_ID_CONTAINS) REFERENCES ORDERS (ORDER_ID) ON DELETE CASCADE,
-                   FOREIGN KEY (CATEGORY_NAME) REFERENCES CATEGORY (CATEGORY_NAME),
-                   FOREIGN KEY (STOREID) REFERENCES STORE (STOREID),
-                   FOREIGN KEY (SUPPLIER_ID) REFERENCES SUPPLIER (SUPPLIER_ID),
-                   FOREIGN KEY (DELIVERY_NO) REFERENCES SUPPLIER_DELIVERY (DELIVERY_NO) ON DELETE CASCADE
-                   );
+    PRODUCTID INTEGER PRIMARY KEY,
+    NAME VARCHAR(255),
+    PRICE DECIMAL(10,2),
+    -- ORDER_ID_CONTAINS INTEGER, -- Removed this column
+    CATEGORY_NAME VARCHAR(255),
+    STOREID INTEGER NOT NULL,
+    SUPPLIER_ID INTEGER NOT NULL,
+    DELIVERY_NO INTEGER NOT NULL,
+    NO_OF_PRODUCTS INTEGER,
+    -- FOREIGN KEY (ORDER_ID_CONTAINS) REFERENCES ORDERS (ORDER_ID) ON DELETE CASCADE, -- Removed FK
+    FOREIGN KEY (CATEGORY_NAME) REFERENCES CATEGORY (CATEGORY_NAME),
+    FOREIGN KEY (STOREID) REFERENCES STORE (STOREID),
+    FOREIGN KEY (SUPPLIER_ID) REFERENCES SUPPLIER (SUPPLIER_ID),
+    FOREIGN KEY (DELIVERY_NO) REFERENCES SUPPLIER_DELIVERY (DELIVERY_NO) ON DELETE CASCADE
+);
+
+-- Added ORDER_ITEMS table
+CREATE TABLE ORDER_ITEMS (
+    ORDER_ITEM_ID INTEGER PRIMARY KEY AUTO_INCREMENT,
+    ORDER_ID INTEGER NOT NULL,
+    PRODUCTID INTEGER NOT NULL,
+    QUANTITY INTEGER NOT NULL,
+    PRICE_AT_PURCHASE DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (ORDER_ID) REFERENCES ORDERS(ORDER_ID) ON DELETE CASCADE,
+    FOREIGN KEY (PRODUCTID) REFERENCES PRODUCT(PRODUCTID)
+    -- Note: No FK to PRODUCT on delete cascade, as we might want historical order items even if product is deleted
+);
 
 
-
-                   
 CREATE TABLE PAYMENT(
-                   PAYMENT_NO INTEGER PRIMARY KEY ,
-                   PAYMENT_TYPE VARCHAR(255) NOT NULL,
-                   AMOUNT INTEGER NOT NULL,
-                   DATE DATE  -- Payment not complete
-                   );
-
-
+    PAYMENT_NO INTEGER PRIMARY KEY AUTO_INCREMENT, -- Added AUTO_INCREMENT
+    PAYMENT_TYPE VARCHAR(255) NOT NULL,
+    AMOUNT DECIMAL(10,2) NOT NULL,
+    DATE DATE,
+    STATUS VARCHAR(20) DEFAULT 'Pending'
+);
 
 CREATE TABLE INVENTORY(
-                   INVENTORY_ID INTEGER PRIMARY KEY,
-                   STOCK_LEVEL INTEGER,
-                   LAST_UPDATED VARCHAR(255) NOT NULL
-                   );
+    INVENTORY_ID INTEGER PRIMARY KEY,
+    STOCK_LEVEL INTEGER,
+    LAST_UPDATED TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE MAKES_PAYMENT(
-                   PAYMENT_NO INTEGER,
-                   ORDER_ID INTEGER,
-                   EMAIL VARCHAR(255),
-                   PRIMARY KEY (PAYMENT_NO, ORDER_ID, EMAIL),
-                   FOREIGN KEY (ORDER_ID) REFERENCES ORDERS (ORDER_ID) ON DELETE CASCADE,
-                   FOREIGN KEY (PAYMENT_NO) REFERENCES PAYMENT (PAYMENT_NO),
-                   FOREIGN KEY (EMAIL) REFERENCES CUSTOMER (EMAIL)
-                   );
-                   
+    PAYMENT_NO INTEGER,
+    ORDER_ID INTEGER,
+    EMAIL VARCHAR(255),
+    PRIMARY KEY (PAYMENT_NO, ORDER_ID, EMAIL),
+    FOREIGN KEY (ORDER_ID) REFERENCES ORDERS (ORDER_ID) ON DELETE CASCADE,
+    FOREIGN KEY (PAYMENT_NO) REFERENCES PAYMENT (PAYMENT_NO),
+    FOREIGN KEY (EMAIL) REFERENCES CUSTOMER (EMAIL)
+);
+
 CREATE TABLE UPDATES(
-                   EMPLOYEE_ID INTEGER,
-                   INVENTORY_ID INTEGER,
-                   SUPPLIER_ID INTEGER,
-                   DELIVERY_NO INTEGER,
-                   PRIMARY KEY(EMPLOYEE_ID, INVENTORY_ID, SUPPLIER_ID, DELIVERY_NO),
-                   FOREIGN KEY (EMPLOYEE_ID) REFERENCES EMPLOYEE (EMPLOYEE_ID),
-                   FOREIGN KEY (INVENTORY_ID) REFERENCES INVENTORY (INVENTORY_ID),
-                   FOREIGN KEY (SUPPLIER_ID) REFERENCES SUPPLIER (SUPPLIER_ID),
-                   FOREIGN KEY (DELIVERY_NO) REFERENCES SUPPLIER_DELIVERY (DELIVERY_NO) ON DELETE CASCADE
-                   );
+    EMPLOYEE_ID INTEGER,
+    INVENTORY_ID INTEGER,
+    SUPPLIER_ID INTEGER,
+    DELIVERY_NO INTEGER,
+    PRIMARY KEY(EMPLOYEE_ID, INVENTORY_ID, SUPPLIER_ID, DELIVERY_NO),
+    FOREIGN KEY (EMPLOYEE_ID) REFERENCES EMPLOYEE (EMPLOYEE_ID),
+    FOREIGN KEY (INVENTORY_ID) REFERENCES INVENTORY (INVENTORY_ID),
+    FOREIGN KEY (SUPPLIER_ID) REFERENCES SUPPLIER (SUPPLIER_ID),
+    FOREIGN KEY (DELIVERY_NO) REFERENCES SUPPLIER_DELIVERY (DELIVERY_NO) ON DELETE CASCADE
+);
 
-INSERT INTO PERSON (SSN, NAME, PHONE, ADDRESS)
-VALUES
-(54128, 'Jane Doe', 123456789, '12th DoLittle St, Calgary, AB'),
-(54529, 'John Smith', 213456789, '2nd Roosevelt Lane, Vancouver, BC'),
-(89758, 'Jane Doe', 784596321, 'Jackson Avenue, Salt Lake City, Texas'),
-(74159, 'Matthew Masters', 852417936, 'James Earl Jones Boulevard, Astera, NW'),
-(96415, 'Farhan Dullahan', 159753248, 'Loc Lac St, Port Tanzania, OW'),
-(25479, 'Marjaneh Imani', 300120040, 'Kunafa Tower, Akihabara'),
-(98526, 'Sin Cos Tanjim', NULL, 'Grove St, Los Santos, San Andreas');
+-- =====================
+-- 3. SAMPLE DATA
+-- =====================
 
-INSERT INTO CUSTOMER (EMAIL, SSN)
-VALUES
-('m.masters@gmail.com', 74159),
-('jane.doe@hotmail.com', 54128),
-('master_inquisitor@ucalgary.ca', 25479),
-('drdullahan@ucalgary.ca', 96415);
+-- PERSON (with real and synthetic SSNs)
+INSERT INTO PERSON (SSN, NAME, PHONE, ADDRESS, is_synthetic_ssn) VALUES
+(54128, 'Jane Doe', 123456789, '12th DoLittle St, Calgary, AB', FALSE),
+(54529, 'John Smith', 213456789, '2nd Roosevelt Lane, Vancouver, BC', FALSE),
+(89758, 'Jane Doe', 784596321, 'Jackson Avenue, Salt Lake City, Texas', FALSE),
+(74159, 'Matthew Masters', 852417936, 'James Earl Jones Boulevard, Astera, NW', FALSE),
+(96415, 'Farhan Dullahan', 159753248, 'Loc Lac St, Port Tanzania, OW', FALSE),
+(25479, 'Marjaneh Imani', 300120040, 'Kunafa Tower, Akihabara', FALSE),
+(98526, 'Sin Cos Tanjim', NULL, 'Grove St, Los Santos, San Andreas', FALSE),
+-- Synthetic SSNs (auto-generated for customers without SSN):
+(100000001, 'Alex NoSSN', 551112222, '123 Virtual Rd, Digital City', TRUE),
+(100000002, 'Taylor Online', 553334444, '456 Cloud Ave, Webville', TRUE);
 
-INSERT INTO STORE (STOREID, LOCATION, NAME, PHONE, MANAGER_ID)
-VALUES
+-- CUSTOMER (Using raw SHA2 for consistency with app.py's hashlib.sha256)
+INSERT INTO CUSTOMER (EMAIL, SSN, PASSWORD_HASH) VALUES
+('jane.doe@hotmail.com', 54128, SHA2('password123', 256)),
+('john.smith@gmail.com', 54529, SHA2('smith1234', 256)),
+('m.masters@gmail.com', 74159, SHA2('mattpass', 256)),
+('drdullahan@ucalgary.ca', 96415, SHA2('dullahan123', 256)),
+('no_ssn1@example.com', 100000001, SHA2('secure123', 256)),
+('no_ssn2@example.com', 100000002, SHA2('mypassword', 256));
+
+-- STORE
+INSERT INTO STORE (STOREID, LOCATION, NAME, PHONE, MANAGER_ID) VALUES
 (50, 'Castle Schrade, OW', 'Fatalis Corp', 5624189, NULL),
 (100, 'Biotechnica Building, Night City', 'Viktor Industries', 74185279, NULL),
-(102, NULL, 'NOS', 8524169, NULL),
-(148, 'Ides of March Road, Las Venturas, San Andreas', 'Triad', 78963, NULL),
-(149, NULL, 'Ice Cold PCs', 74159874, NULL),
-(255, '255 University Drive, Calgary, AB', 'Victor Von Doom Hardwares', 123459876, NULL),
-(1486, 'Baxter Building', 'Fantastic 4 Inc.', 852741987, NULL);
+(255, '255 University Drive, Calgary, AB', 'Victor Von Doom Hardwares', 123459876, NULL);
 
-INSERT INTO EMPLOYEE (EMPLOYEE_ID, SSN, ROLE, STOREID)
-VALUES
-(148, 96415, 'Customer Service', 100), 
-(251, 54529, NULL, 100),
-(500, 89758, 'Manager', 102),
-(894, 74159, 'Cashier', 1486),
-(1000, 54128, 'Manager', 149),
-(502, 98526, 'Backroom Loader', 50);
+-- EMPLOYEE (Using raw SHA2 for consistency with app.py's hashlib.sha256)
+INSERT INTO EMPLOYEE (EMPLOYEE_ID, SSN, ROLE, STOREID, PASSWORD_HASH) VALUES
+(148, 96415, 'Customer Service', 100, SHA2('emp148pass', 256)),
+(500, 89758, 'Manager', 50, SHA2('manager500', 256)),
+(1000, 54128, 'Manager', 255, SHA2('manager1000', 256));
 
-UPDATE STORE
-SET MANAGER_ID = 500 WHERE STOREID = 50;
+-- Update Store Managers
+UPDATE STORE SET MANAGER_ID = 500 WHERE STOREID = 50;
+UPDATE STORE SET MANAGER_ID = 1000 WHERE STOREID = 255;
 
-UPDATE STORE
-SET MANAGER_ID = 1000 WHERE STOREID = 100;
-
-UPDATE STORE
-SET MANAGER_ID = 500 WHERE STOREID = 102;
-
-UPDATE STORE
-SET MANAGER_ID = 1000 WHERE STOREID = 148;
-
-UPDATE STORE
-SET MANAGER_ID = 500 WHERE STOREID = 149;
-
-UPDATE STORE
-SET MANAGER_ID = 1000 WHERE STOREID = 255;
-
-UPDATE STORE
-SET MANAGER_ID = 500 WHERE STOREID = 1486;
-
-INSERT INTO ORDERS (ORDER_ID, ORDER_DATE, EMAIL, EMPLOYEE_ID)
-VALUES
-(100, '2012-01-01', 'jane.doe@hotmail.com', 148),
-(785, '2024-12-28', 'master_inquisitor@ucalgary.ca', 500),
-(956, '2021-08-24', 'm.masters@gmail.com', 500),
-(5699, '2018-07-13', 'drdullahan@ucalgary.ca', 148),
-(7415, '2019-06-19', 'm.masters@gmail.com', 500);
-
-INSERT INTO CATEGORY (CATEGORY_NAME, GENERATION)
-VALUES
+-- CATEGORY
+INSERT INTO CATEGORY (CATEGORY_NAME, GENERATION) VALUES
 ('Processor', 7),
 ('Motherboard', 4),
-('Laptop', 3),
-('Unknown', NULL),
-('Nintendo Gaming Console', 5),
-('Graphics Card', 7);
+('Graphics Card', 7),
+('Laptop', 3);
 
-INSERT INTO SUPPLIER (SUPPLIER_ID, NAME)
-VALUES
+-- SUPPLIER
+INSERT INTO SUPPLIER (SUPPLIER_ID, NAME) VALUES
 (15, 'Arasaka'),
 (7, 'Dell'),
 (19, 'Guild'),
-(78, 'Sentinels'),
-(52, 'Gol D. Roger'),
 (741, 'AMD');
 
-INSERT INTO SUPPLIER_DELIVERY (DELIVERY_NO, SUPPLIER_ID, STATUS, DELIVERY_DATE)
-VALUES
-(2, 741, 'Delivered', '2011-12-12'),
-(4, 7, 'Delivered', '2023-12-12'),
-(5, 19, 'Delivered', '2025-02-02'),
-(24, 15, 'Delivered', '2019-05-19'),
-(25, 15, 'Not Delivered', '2020-01-01'),
-(41, 78, 'Delivered', '2020-07-24'),
-(52, 52, 'Delivered', '2018-07-12');
+-- SUPPLIER_DELIVERY
+INSERT INTO SUPPLIER_DELIVERY (DELIVERY_NO, SUPPLIER_ID, STATUS, DELIVERY_DATE) VALUES
+(2, 741, 'Delivered', '2023-01-15'),
+(4, 7, 'Delivered', '2023-02-20'),
+(5, 19, 'Pending', '2023-03-10');
 
-INSERT INTO PRODUCT (PRODUCTID, NAME, PRICE, ORDER_ID_CONTAINS, CATEGORY_NAME, STOREID, SUPPLIER_ID, DELIVERY_NO, NO_OF_PRODUCTS)
-VALUES
-(1, 'Core i7', 999, 7415, 'Processor', 255, 15, 24, 8),
-(2, 'RTX 5070', 699, NULL, 'Motherboard', 100, 19, 5, 6),
-(15, NULL, NULL, NULL, 'Unknown', 102, 15, 25, 1),
-(24, 'Dell Inspiron 3515', 1599, 956, 'Laptop', 1486, 78, 41, 20),
-(36, 'Dell Inspiron 3515', 1599, 785, 'Laptop', 148, 7, 4, 10),
-(46, 'Nintendo 3DS', 1000, 5699, 'Nintendo Gaming Console', 149, 52, 52, 100),
-(50, 'RX 7600XTX', 2000, 100,  'Graphics Card', 50, 741, 2, 1);
+-- PRODUCT (Removed ORDER_ID_CONTAINS)
+INSERT INTO PRODUCT (PRODUCTID, NAME, PRICE, CATEGORY_NAME, STOREID, SUPPLIER_ID, DELIVERY_NO, NO_OF_PRODUCTS) VALUES
+(1, 'Core i7-13700K', 399.99, 'Processor', 255, 15, 2, 25),
+(2, 'RTX 4090', 1599.99, 'Graphics Card', 100, 19, 5, 10),
+(3, 'Dell XPS 15', 1499.99, 'Laptop', 50, 7, 4, 15);
 
-INSERT INTO PAYMENT (PAYMENT_NO, PAYMENT_TYPE, AMOUNT, DATE)
-VALUES
-(1, 'Cash', 999, '2019-06-19'),
-(2, 'Debit', 1599, '2021-08-24'),
-(3, 'Credit', 1599, '2024-12-28'),
-(4, 'Debit', 1000, '2018-07-13'),
-(5, 'Debit', 2000, '2012-01-01');
+-- INVENTORY
+INSERT INTO INVENTORY (INVENTORY_ID, STOCK_LEVEL) VALUES
+(1, 25),
+(2, 10),
+(3, 15);
 
-INSERT INTO INVENTORY (INVENTORY_ID, STOCK_LEVEL, LAST_UPDATED)
-VALUES
-(1, 8, '2024-03-15'),
-(2, 6, '2024-03-14'),
-(3, 1, '2024-02-28'),
-(4, 20, '2024-01-10'),
-(5, 10, '2024-03-01'),
-(6, 100, '2024-02-20'),
-(7, 1, '2024-03-05');
+-- ORDERS
+INSERT INTO ORDERS (ORDER_ID, ORDER_DATE, EMAIL, EMPLOYEE_ID, STATUS) VALUES
+(1001, '2023-01-20', 'jane.doe@hotmail.com', 148, 'Completed'),
+(1002, '2023-02-25', 'john.smith@gmail.com', 500, 'Processing');
 
-INSERT INTO MAKES_PAYMENT (PAYMENT_NO, ORDER_ID, EMAIL)
-VALUES
-(1, 7415, 'm.masters@gmail.com'),
-(2, 956, 'm.masters@gmail.com'),
-(3, 785, 'master_inquisitor@ucalgary.ca'),
-(4, 5699, 'drdullahan@ucalgary.ca'),
-(5, 100, 'jane.doe@hotmail.com');
+-- ORDER_ITEMS (Sample data for the new table)
+INSERT INTO ORDER_ITEMS (ORDER_ID, PRODUCTID, QUANTITY, PRICE_AT_PURCHASE) VALUES
+(1001, 2, 1, 1599.99), -- Jane bought 1 RTX 4090
+(1002, 3, 1, 1499.99); -- John bought 1 Dell XPS 15
 
-INSERT INTO UPDATES (EMPLOYEE_ID, INVENTORY_ID, SUPPLIER_ID, DELIVERY_NO)
-VALUES
-(148, 1, 15, 24),
-(500, 2, 7, 4),
-(894, 3, 19, 5),
-(1000, 4, 78, 41),
-(502, 5, 52, 52);
+-- PAYMENT
+INSERT INTO PAYMENT (PAYMENT_NO, PAYMENT_TYPE, AMOUNT, DATE, STATUS) VALUES
+(1, 'Credit Card', 1599.99, '2023-01-20', 'Completed'),
+(2, 'PayPal', 1499.99, '2023-02-25', 'Pending');
 
--- Choosing an item to add to order
-SELECT 'RTX 5070' 
-FROM PRODUCT;
+-- MAKES_PAYMENT
+INSERT INTO MAKES_PAYMENT (PAYMENT_NO, ORDER_ID, EMAIL) VALUES
+(1, 1001, 'jane.doe@hotmail.com'),
+(2, 1002, 'john.smith@gmail.com');
 
--- Finding the most expensive product in the store
-SELECT NAME, PRICE, STOREID
-FROM PRODUCT
-ORDER BY PRICE DESC
-LIMIT 1;
+-- UPDATES
+INSERT INTO UPDATES (EMPLOYEE_ID, INVENTORY_ID, SUPPLIER_ID, DELIVERY_NO) VALUES
+(148, 1, 15, 2),
+(500, 2, 19, 5);
 
--- Find all products supplied by a particular supplier
-SELECT P.PRODUCTID, P.NAME, P.PRICE
-FROM  PRODUCT AS P
-JOIN SUPPLIER AS S ON P.SUPPLIER_ID=S.SUPPLIER_ID
-WHERE S.NAME='Arasaka';
+-- =====================
+-- 4. INDEXES
+-- =====================
+CREATE INDEX idx_product_name ON PRODUCT(NAME);
+CREATE INDEX idx_product_category ON PRODUCT(CATEGORY_NAME);
+CREATE INDEX idx_order_date ON ORDERS(ORDER_DATE);
 
--- Find managers and the stores they manage
-SELECT E.EMPLOYEE_ID, E.ROLE, S.NAME, S.STOREID
-FROM EMPLOYEE AS E
-JOIN STORE AS S ON E.EMPLOYEE_ID=S.MANAGER_ID
-WHERE E.ROLE='Manager';
+-- =====================
+-- 5. SECURITY FEATURES
+-- =====================
+-- Password history tracking
+CREATE TABLE PASSWORD_HISTORY (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (email) REFERENCES CUSTOMER(EMAIL)
+);
 
--- Find and produce the receipt of a particular order
-SELECT MP.PAYMENT_NO, MP.ORDER_ID, MP.EMAIL, P.NAME
-FROM MAKES_PAYMENT as MP
-JOIN CUSTOMER AS C ON MP.EMAIL=C.EMAIL
-JOIN PERSON AS P ON C.SSN=P.SSN
-WHERE P.NAME='Jane Doe';
+-- Registration procedure with auto-SSN
+DELIMITER //
+CREATE PROCEDURE register_customer(
+    IN p_name VARCHAR(255),
+    IN p_email VARCHAR(255),
+    IN p_password VARCHAR(255),
+    IN p_phone INT,
+    IN p_address VARCHAR(255)
+)
+BEGIN
+    DECLARE temp_ssn INT;
+    
+    -- Generate synthetic SSN (first 9 digits of SHA256 hash)
+    SET temp_ssn = CONV(SUBSTRING(SHA2(p_email, 256), 1, 8), 16, 10) % 1000000000;
+    
+    -- Insert with synthetic SSN
+    INSERT INTO PERSON (SSN, NAME, PHONE, ADDRESS, is_synthetic_ssn)
+    VALUES (temp_ssn, p_name, p_phone, p_address, TRUE);
+    
+    -- Insert customer with hashed password (raw SHA2)
+    INSERT INTO CUSTOMER (EMAIL, SSN, PASSWORD_HASH)
+    VALUES (p_email, temp_ssn, SHA2(p_password, 256));
+    
+    -- Log password (raw SHA2)
+    INSERT INTO PASSWORD_HISTORY (email, password_hash)
+    VALUES (p_email, SHA2(p_password, 256));
+END//
+DELIMITER ;
 
--- Updating the phone number for a person
-UPDATE PERSON
-SET PHONE=987654321
-WHERE NAME='Jane Doe' 
-AND SSN=54128;
+-- Update root user authentication to mysql_native_password
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'qwerty';
+FLUSH PRIVILEGES;
 
--- Updating product availability after a delivery so number of available products of a certain kind is now higher. 
-UPDATE PRODUCT
-SET NO_OF_PRODUCTS=20
-WHERE PRODUCTID=50;
-
--- After finding a certain product, we update the order to add to it
-UPDATE PRODUCT
-SET ORDER_ID_CONTAINS=785
-WHERE PRODUCTID=2;
-
--- Delete a Delivery that will not come and is not delivered
-DELETE FROM SUPPLIER_DELIVERY
-WHERE STATUS='NOT DELIVERED';
-
--- Delete products belonging to categories with GENERATION=3 first due to foreign key constraint
-DELETE FROM PRODUCT
-WHERE CATEGORY_NAME IN (SELECT CATEGORY_NAME FROM CATEGORY WHERE GENERATION=3);
-
--- Products are too old to sell, so we delete them
-DELETE FROM CATEGORY
-WHERE GENERATION=3;
-
--- Delete from inventory after a product is no longer available in the storage inventory
-DELETE FROM INVENTORY
-WHERE STOCK_LEVEL = 0;
-
--- Delete a store if they have not provided a location
-
--- Step 1: Break MANAGER_ID dependency for all stores with NULL location
-UPDATE STORE
-SET MANAGER_ID = NULL
-WHERE LOCATION IS NULL;
-
--- Step 2: Break EMPLOYEE dependency for all stores with NULL location
-UPDATE EMPLOYEE
-SET STOREID = NULL
-WHERE STOREID IN (SELECT STOREID FROM STORE WHERE LOCATION IS NULL);
-
--- Step 3: Break PRODUCT dependency for all stores with NULL location
-DELETE FROM PRODUCT
-WHERE STOREID IN (SELECT STOREID FROM STORE WHERE LOCATION IS NULL);
-
--- Step 4: Delete the stores where LOCATION IS NULL (dependencies should now be resolved)
-DELETE FROM STORE
-WHERE LOCATION IS NULL;
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

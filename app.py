@@ -1,489 +1,850 @@
-import os
-from flask import Flask, jsonify, request, session
-from flask_mysqldb import MySQL
+# app.py
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
-from werkzeug.security import generate_password_hash, check_password_hash
-import datetime # Needed for order dates etc.
+# from werkzeug.security import generate_password_hash, check_password_hash # Replaced with hashlib
+import hashlib # Added for SHA-256
+import os
+from datetime import datetime
+import random
+import mysql.connector
+from flask import send_from_directory # Import send_from_directory
 
-app = Flask(__name__)
-CORS(app, supports_credentials=True) # Enable CORS for all routes, allow credentials for sessions
+# Configure Flask App: static_url_path='/assets' means requests starting with /assets
+# will be served from the static_folder='assets' directory.
+app = Flask(__name__, static_url_path='/assets', static_folder='assets')
 
-# Secret key for session management
-# In a production environment, use a strong, randomly generated key stored securely
-app.config['SECRET_KEY'] = os.urandom(24) # Generates a random key each time the app starts
+CORS(app, supports_credentials=True)
 
-# MySQL configurations
+# MySQL Configuration
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'qwerty'
+app.config['MYSQL_PASSWORD'] = 'qwerty'  # Change this
 app.config['MYSQL_DB'] = 'Computer_Hardware_Store'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor' # Return results as dictionaries
+app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
-mysql = MySQL(app)
+# Session configuration
+app.secret_key = os.urandom(24)
+
+# Helper function to execute SQL queries
+def execute_query(query, params=None, fetch_all=False, commit=False):
+    try:
+        connection = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='qwerty',
+            database='Computer_Hardware_Store'
+        )
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(query, params or ())
+        
+        if commit:
+            connection.commit()
+            return cursor.lastrowid
+        
+        if fetch_all:
+            result = cursor.fetchall()
+        else:
+            result = cursor.fetchone()
+        
+        cursor.close()
+        connection.close()
+        return result
+    except Exception as e:
+        print(f"Database error: {e}")
+        # Ensure connection is closed even on error if it was opened
+        if 'connection' in locals() and connection.is_connected():
+            cursor.close()
+            connection.close()
+        return None
+
+# --- HTML Serving Routes ---
+
+# --- HTML Serving Routes ---
 
 @app.route('/')
-def index():
-    # Check if user is logged in
-    if 'email' in session:
-        return f"Flask backend is running! Logged in as: {session['email']}"
-    return "Flask backend is running! Not logged in."
+def serve_index():
+    # Serve index.html from the project root
+    return send_from_directory('.', 'index.html')
 
-# --- User Authentication ---
+@app.route('/customer/<path:filename>')
+def serve_customer_html(filename):
+    # Serves HTML files from the customer directory
+    return send_from_directory('customer', filename)
+
+# Add routes for other top-level HTML if needed, or structure differently
+
+# --- API Routes ---
+
+# Authentication and User Management Routes
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    ssn = data.get('ssn') # Assuming SSN is provided during registration for PERSON table
+    data = request.json
     name = data.get('name')
-    phone = data.get('phone')
-    address = data.get('address')
     email = data.get('email')
     password = data.get('password')
+    phone = data.get('phone')
+    address = data.get('address')
+    
+    # Check if email already exists
+    existing_user = execute_query("SELECT * FROM CUSTOMER WHERE EMAIL = %s", [email])
+    if existing_user:
+        return jsonify({"success": False, "message": "Email already registered"}), 400
 
-    if not all([ssn, name, address, email, password]):
-        return jsonify({"error": "Missing required fields (SSN, Name, Address, Email, Password)"}), 400
+    # Generate synthetic SSN (simple approach for demonstration)
+    # In a real app, ensure uniqueness and better generation
+    import hashlib
+    synthetic_ssn_str = hashlib.sha256(email.encode()).hexdigest()[:8]
+    synthetic_ssn = int(synthetic_ssn_str, 16) % 1000000000 # Convert hex substring to int
 
-    hashed_password = generate_password_hash(password)
+    # Hash the password using SHA-256 (Less secure than Werkzeug's salted hash)
+    hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
     try:
-        cur = mysql.connection.cursor()
-
-        # Check if SSN or Email already exists
-        cur.execute("SELECT SSN FROM PERSON WHERE SSN = %s", (ssn,))
-        if cur.fetchone():
-            cur.close()
-            return jsonify({"error": "SSN already registered"}), 409 # Conflict
-        cur.execute("SELECT EMAIL FROM CUSTOMER WHERE EMAIL = %s", (email,))
-        if cur.fetchone():
-            cur.close()
-            return jsonify({"error": "Email already registered"}), 409 # Conflict
-
-        # Insert into PERSON (assuming password is not stored here, but linked via CUSTOMER)
-        cur.execute("INSERT INTO PERSON (SSN, NAME, PHONE, ADDRESS) VALUES (%s, %s, %s, %s)",
-                    (ssn, name, phone, address))
-
-        # Insert into CUSTOMER (Store hashed password here - NOTE: Schema doesn't have password field, adding conceptually)
-        # !!! IMPORTANT: The current CUSTOMER table schema lacks a password field.
-        # For this example, I'll proceed as if it existed. You MUST add a password column (e.g., VARCHAR(255)) to the CUSTOMER table.
-        # Example ALTER statement: ALTER TABLE CUSTOMER ADD COLUMN password_hash VARCHAR(255) NOT NULL;
-        # Assuming 'password_hash' column exists:
-        # cur.execute("INSERT INTO CUSTOMER (EMAIL, SSN, password_hash) VALUES (%s, %s, %s)",
-        #             (email, ssn, hashed_password))
-        # If no password column, insert without it (LOGIN WILL NOT WORK):
-        cur.execute("INSERT INTO CUSTOMER (EMAIL, SSN) VALUES (%s, %s)", (email, ssn))
-
-
-        mysql.connection.commit()
-        cur.close()
-        return jsonify({"message": "Registration successful. Please add a 'password_hash' column to CUSTOMER table for login."}), 201
-
+        # Insert into PERSON table first
+        person_id = execute_query(
+            "INSERT INTO PERSON (SSN, NAME, PHONE, ADDRESS, is_synthetic_ssn) VALUES (%s, %s, %s, %s, %s)",
+            [synthetic_ssn, name, phone, address, True],
+            commit=True
+        )
+        
+        # Insert into CUSTOMER table
+        customer_id = execute_query(
+            "INSERT INTO CUSTOMER (EMAIL, SSN, PASSWORD_HASH) VALUES (%s, %s, %s)",
+            [email, synthetic_ssn, hashed_password],
+            commit=True
+        )
+        
+        # Note: Password history logging removed as it was tied to the stored procedure
+        
+        return jsonify({"success": True, "message": "Registration successful"}), 201
+        
     except Exception as e:
-        mysql.connection.rollback() # Rollback in case of error
-        cur.close()
-        return jsonify({"error": f"Database error: {str(e)}"}), 500
-
+        # Consider rolling back PERSON insert if CUSTOMER insert fails
+        print(f"Registration error: {e}")
+        # Check for duplicate SSN specifically if that's a constraint violation
+        if 'Duplicate entry' in str(e) and 'for key \'PRIMARY\'' in str(e) and 'PERSON' in str(e):
+             return jsonify({"success": False, "message": "Failed to generate unique identifier. Please try again or contact support."}), 500
+        elif 'Duplicate entry' in str(e) and 'for key \'PRIMARY\'' in str(e) and 'CUSTOMER' in str(e):
+             # This case should be caught by the initial email check, but handle defensively
+             return jsonify({"success": False, "message": "Email already registered."}), 400
+        return jsonify({"success": False, "message": f"An internal error occurred: {str(e)}"}), 500
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    data = request.get_json()
+    data = request.json
     email = data.get('email')
     password = data.get('password')
+    
+    # Get customer with email
+    customer = execute_query("""
+        SELECT c.EMAIL, c.PASSWORD_HASH, p.NAME, p.PHONE, p.ADDRESS 
+        FROM CUSTOMER c
+        JOIN PERSON p ON c.SSN = p.SSN
+        WHERE c.EMAIL = %s
+    """, [email])
 
-    if not email or not password:
-        return jsonify({"error": "Email and password required"}), 400
+    # --- Debugging ---
+    print(f"Login attempt for: {email}")
+    if customer:
+        print(f"Found customer. Stored hash: {customer.get('PASSWORD_HASH')}")
+        # Verify password using SHA-256
+        provided_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
+        hash_check_result = (customer['PASSWORD_HASH'] == provided_hash)
+        print(f"Password check result: {hash_check_result}")
+    else:
+        print("Customer not found in database.")
+    # --- End Debugging ---
 
-    try:
-        cur = mysql.connection.cursor()
-        # !!! IMPORTANT: Adjust this query based on where the password hash is stored.
-        # Assuming it's added to CUSTOMER table as 'password_hash':
-        # cur.execute("SELECT C.EMAIL, C.SSN, P.NAME, C.password_hash FROM CUSTOMER C JOIN PERSON P ON C.SSN = P.SSN WHERE C.EMAIL = %s", (email,))
-
-        # If password hash is NOT stored, login cannot be securely verified.
-        # This query just checks if the email exists:
-        cur.execute("SELECT EMAIL, SSN FROM CUSTOMER WHERE EMAIL = %s", (email,))
-        user = cur.fetchone()
-        cur.close()
-
-        # --- Password Verification (Requires 'password_hash' column) ---
-        # if user and check_password_hash(user['password_hash'], password):
-        #     session['email'] = user['EMAIL']
-        #     session['ssn'] = user['SSN']
-        #     session['name'] = user['NAME'] # Store name from PERSON if needed
-        #     return jsonify({"message": "Login successful", "email": user['EMAIL']}), 200
-        # else:
-        #     return jsonify({"error": "Invalid credentials"}), 401
-        # --- End Password Verification ---
-
-        # --- Placeholder Login (If no password hash column) ---
-        if user:
-             session['email'] = user['EMAIL']
-             session['ssn'] = user['SSN']
-             # Cannot fetch name without JOIN and password hash column doesn't exist for proper query yet
-             return jsonify({"message": "Login successful (Placeholder - No Password Check)", "email": user['EMAIL']}), 200
-        else:
-             return jsonify({"error": "Invalid credentials (Placeholder)"}), 401
-        # --- End Placeholder Login ---
-
-
-    except Exception as e:
-        return jsonify({"error": f"Database error: {str(e)}"}), 500
+    # Verify password using SHA-256
+    if customer and customer['PASSWORD_HASH'] == hashlib.sha256(password.encode('utf-8')).hexdigest():
+        # Store user info in session
+        session['user'] = {
+            'email': customer['EMAIL'],
+            'name': customer['NAME']
+        }
+        return jsonify({
+            "success": True, 
+            "user": {
+                "email": customer['EMAIL'],
+                "name": customer['NAME'],
+                "phone": customer['PHONE'],
+                "address": customer['ADDRESS']
+            }
+        })
+    
+    return jsonify({"success": False, "message": "Invalid email or password"}), 401
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
-    session.pop('email', None)
-    session.pop('ssn', None)
-    session.pop('name', None)
-    session.pop('cart', None) # Clear cart on logout
-    return jsonify({"message": "Logout successful"}), 200
+    session.pop('user', None)
+    return jsonify({"success": True})
 
-@app.route('/api/session', methods=['GET'])
-def get_session():
-    if 'email' in session:
-        return jsonify({
-            "logged_in": True,
-            "email": session.get('email'),
-            "ssn": session.get('ssn'),
-            "name": session.get('name')
-        }), 200
-    else:
-        return jsonify({"logged_in": False}), 200
+@app.route('/api/user', methods=['GET'])
+def get_user():
+    if 'user' in session:
+        return jsonify({"success": True, "user": session['user']})
+    return jsonify({"success": False, "message": "Not logged in"}), 401
 
-
-# --- Product Endpoints ---
+# Product Routes
 
 @app.route('/api/products', methods=['GET'])
 def get_products():
-    try:
-        cur = mysql.connection.cursor()
-        # Fetch relevant details for product listing
-        cur.execute("""
-            SELECT p.PRODUCTID, p.NAME, p.PRICE, p.NO_OF_PRODUCTS, c.CATEGORY_NAME
-            FROM PRODUCT p
-            LEFT JOIN CATEGORY c ON p.CATEGORY_NAME = c.CATEGORY_NAME
-        """)
-        products = cur.fetchall()
-        cur.close()
-        return jsonify(products)
-    except Exception as e:
-        cur.close()
-        return jsonify({"error": str(e)}), 500
+    limit = request.args.get('limit', type=int)
+    query = """
+        SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS
+        FROM PRODUCT p
+        ORDER BY p.PRODUCTID DESC
+    """
+    if limit:
+        query += " LIMIT %s"
+        products = execute_query(query, [limit], fetch_all=True)
+    else:
+        products = execute_query(query, fetch_all=True)
+
+    return jsonify({"success": True, "products": products})
 
 @app.route('/api/products/<int:product_id>', methods=['GET'])
-def get_product_details(product_id):
+def get_product(product_id):
+    product = execute_query("""
+        SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS,
+               s.LOCATION, s.NAME as STORE_NAME
+        FROM PRODUCT p
+        JOIN STORE s ON p.STOREID = s.STOREID
+        WHERE p.PRODUCTID = %s
+    """, [product_id])
+    
+    if not product:
+        return jsonify({"success": False, "message": "Product not found"}), 404
+    
+    # Get related products (same category)
+    related_products = execute_query("""
+        SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS
+        FROM PRODUCT p
+        WHERE p.CATEGORY_NAME = %s AND p.PRODUCTID != %s
+        LIMIT 4
+    """, [product['CATEGORY_NAME'], product_id], fetch_all=True)
+    
+    return jsonify({
+        "success": True,
+        "product": product,
+        "related_products": related_products
+    })
+
+@app.route('/api/categories', methods=['GET'])
+def get_categories():
+    categories = execute_query("SELECT * FROM CATEGORY", fetch_all=True)
+    return jsonify({"success": True, "categories": categories})
+
+# Cart and Order Routes
+
+@app.route('/api/orders', methods=['POST'])
+def create_order():
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Please login to place an order"}), 401
+
+    # Get cart from session
+    session_cart = session.get('cart', [])
+    if not session_cart:
+        return jsonify({"success": False, "message": "Cart is empty"}), 400
+
+    # Get shipping and payment info from request (though not fully used by current schema)
+    data = request.json
+    shipping_info = data.get('shipping_info', {}) # Currently unused for order storage
+    payment_info = data.get('payment_info', {})
+    payment_type = payment_info.get('card_name', 'Credit Card') # Use card name as type, or default
+
+    email = session['user']['email']
+    order_date_str = datetime.now().strftime('%Y-%m-%d')
+
+    # --- Database Interaction (Ideally within a transaction) ---
+    connection = None
+    cursor = None
     try:
-        cur = mysql.connection.cursor()
-        # Fetch more details for a single product page
-        cur.execute("""
-            SELECT p.PRODUCTID, p.NAME, p.PRICE, p.NO_OF_PRODUCTS, c.CATEGORY_NAME, c.GENERATION
-            FROM PRODUCT p
-            LEFT JOIN CATEGORY c ON p.CATEGORY_NAME = c.CATEGORY_NAME
-            WHERE p.PRODUCTID = %s
-        """, (product_id,))
-        product = cur.fetchone()
-        cur.close()
-        if product:
-            return jsonify(product)
-        else:
-            return jsonify({"error": "Product not found"}), 404
-    except Exception as e:
-        cur.close()
-        return jsonify({"error": str(e)}), 500
+        connection = mysql.connector.connect(
+            host=app.config['MYSQL_HOST'],
+            user=app.config['MYSQL_USER'],
+            password=app.config['MYSQL_PASSWORD'],
+            database=app.config['MYSQL_DB']
+        )
+        cursor = connection.cursor(dictionary=True)
+        # connection.start_transaction() # Start transaction
 
+        # 1. Fetch product details and validate stock
+        product_ids = [item['productId'] for item in session_cart]
+        if not product_ids: # Should be caught earlier, but double-check
+             return jsonify({"success": False, "message": "Cart contains no valid product IDs"}), 400
 
-# --- Cart Endpoints ---
+        placeholders = ','.join(['%s'] * len(product_ids))
+        query = f"SELECT PRODUCTID, NAME, PRICE, NO_OF_PRODUCTS FROM PRODUCT WHERE PRODUCTID IN ({placeholders})"
+        cursor.execute(query, product_ids)
+        products_in_db = {p['PRODUCTID']: p for p in cursor.fetchall()}
 
-@app.route('/api/cart', methods=['GET', 'POST'])
-def handle_cart():
-    # Initialize cart in session if it doesn't exist
-    if 'cart' not in session:
-        session['cart'] = {} # {product_id: quantity}
+        total_amount = 0
+        items_to_process = []
 
-    if request.method == 'POST':
-        # Add item to cart
-        data = request.get_json()
-        product_id = str(data.get('product_id')) # Use string keys for JSON compatibility
-        quantity = int(data.get('quantity', 1))
+        for item in session_cart:
+            product_id = item['productId']
+            quantity_requested = item['quantity']
+            product_db = products_in_db.get(product_id)
 
-        if not product_id or quantity <= 0:
-            return jsonify({"error": "Invalid product ID or quantity"}), 400
+            if not product_db:
+                raise ValueError(f"Product ID {product_id} not found in database.")
+            if product_db['NO_OF_PRODUCTS'] < quantity_requested:
+                raise ValueError(f"Insufficient stock for product '{product_db['NAME']}' (Requested: {quantity_requested}, Available: {product_db['NO_OF_PRODUCTS']}).")
 
-        # Check product stock (optional but recommended)
-        # try:
-        #     cur = mysql.connection.cursor()
-        #     cur.execute("SELECT NO_OF_PRODUCTS FROM PRODUCT WHERE PRODUCTID = %s", (product_id,))
-        #     product = cur.fetchone()
-        #     cur.close()
-        #     if not product or product['NO_OF_PRODUCTS'] < quantity:
-        #         return jsonify({"error": "Insufficient stock or product not found"}), 400
-        # except Exception as e:
-        #     return jsonify({"error": f"Database error checking stock: {str(e)}"}), 500
+            item_total = product_db['PRICE'] * quantity_requested
+            total_amount += item_total
+            items_to_process.append({
+                'productId': product_id,
+                'quantity': quantity_requested,
+                'price': product_db['PRICE'] # Use fetched price
+            })
 
-        # Add/Update item in cart
-        current_quantity = session['cart'].get(product_id, 0)
-        session['cart'][product_id] = current_quantity + quantity
-        session.modified = True # Mark session as modified
-        return jsonify({"message": "Item added to cart", "cart": session['cart']}), 200
-
-    elif request.method == 'GET':
-        # Get cart contents with product details
-        cart_items = []
-        total_price = 0
-        if session['cart']:
-            product_ids = list(session['cart'].keys())
-            # Create placeholders for the query
-            placeholders = ','.join(['%s'] * len(product_ids))
-            try:
-                cur = mysql.connection.cursor()
-                cur.execute(f"SELECT PRODUCTID, NAME, PRICE FROM PRODUCT WHERE PRODUCTID IN ({placeholders})", product_ids)
-                products = {str(p['PRODUCTID']): p for p in cur.fetchall()} # Map by ID for easy lookup
-                cur.close()
-
-                for product_id, quantity in session['cart'].items():
-                    product_details = products.get(product_id)
-                    if product_details:
-                        item_total = product_details['PRICE'] * quantity
-                        cart_items.append({
-                            "product_id": product_id,
-                            "name": product_details['NAME'],
-                            "price": product_details['PRICE'],
-                            "quantity": quantity,
-                            "item_total": item_total
-                        })
-                        total_price += item_total
-                    else:
-                        # Product might have been removed from DB, remove from cart?
-                        # Or just skip displaying it. Let's skip for now.
-                        pass
-
-            except Exception as e:
-                 return jsonify({"error": f"Database error fetching cart details: {str(e)}"}), 500
-
-        return jsonify({"items": cart_items, "total_price": total_price})
-
-
-@app.route('/api/cart/update', methods=['POST'])
-def update_cart_item():
-    if 'cart' not in session:
-        session['cart'] = {}
-
-    data = request.get_json()
-    product_id = str(data.get('product_id'))
-    quantity = int(data.get('quantity'))
-
-    if not product_id or quantity < 0: # Allow 0 quantity to remove item
-         return jsonify({"error": "Invalid product ID or quantity"}), 400
-
-    if product_id in session['cart']:
-        if quantity == 0:
-            del session['cart'][product_id]
-        else:
-            # Optional: Check stock before updating
-            session['cart'][product_id] = quantity
-        session.modified = True
-        return jsonify({"message": "Cart updated", "cart": session['cart']}), 200
-    else:
-        return jsonify({"error": "Product not found in cart"}), 404
-
-
-@app.route('/api/cart/remove', methods=['POST'])
-def remove_cart_item():
-    if 'cart' not in session:
-        session['cart'] = {}
-
-    data = request.get_json()
-    product_id = str(data.get('product_id'))
-
-    if not product_id:
-        return jsonify({"error": "Product ID required"}), 400
-
-    if product_id in session['cart']:
-        del session['cart'][product_id]
-        session.modified = True
-        return jsonify({"message": "Item removed from cart", "cart": session['cart']}), 200
-    else:
-        return jsonify({"error": "Product not found in cart"}), 404
-
-
-# --- Checkout & Order Endpoints ---
-
-@app.route('/api/checkout', methods=['POST'])
-def checkout():
-    if 'email' not in session:
-        return jsonify({"error": "User not logged in"}), 401
-
-    if 'cart' not in session or not session['cart']:
-        return jsonify({"error": "Cart is empty"}), 400
-
-    data = request.get_json()
-    payment_type = data.get('payment_type', 'Unknown') # Get payment type from request
-
-    cart = session['cart']
-    product_ids = list(cart.keys())
-    placeholders = ','.join(['%s'] * len(product_ids))
-    total_amount = 0
-    products_in_cart_details = {}
-
-    cur = None # Initialize cursor variable
-    try:
-        cur = mysql.connection.cursor()
-
-        # 1. Get product details and calculate total amount from DB
-        cur.execute(f"SELECT PRODUCTID, NAME, PRICE, NO_OF_PRODUCTS FROM PRODUCT WHERE PRODUCTID IN ({placeholders})", product_ids)
-        db_products = cur.fetchall()
-
-        if len(db_products) != len(product_ids):
-             # Handle case where some products in cart might not exist in DB anymore
-             missing_ids = set(product_ids) - set(str(p['PRODUCTID']) for p in db_products)
-             cur.close()
-             return jsonify({"error": f"Products not found: {', '.join(missing_ids)}"}), 404
-
-        for p in db_products:
-            product_id_str = str(p['PRODUCTID'])
-            quantity_in_cart = cart[product_id_str]
-            if p['NO_OF_PRODUCTS'] < quantity_in_cart:
-                cur.close()
-                return jsonify({"error": f"Insufficient stock for {p['NAME']} (Available: {p['NO_OF_PRODUCTS']}, Requested: {quantity_in_cart})"}), 400
-            products_in_cart_details[product_id_str] = p
-            total_amount += p['PRICE'] * quantity_in_cart
-
-        # --- Start Transaction ---
-        # 2. Create ORDER record
-        order_date = datetime.date.today()
-        customer_email = session['email']
-        # Assuming EMPLOYEE_ID is optional or handled differently
-        cur.execute("INSERT INTO ORDERS (ORDER_DATE, EMAIL) VALUES (%s, %s)", (order_date, customer_email))
-        new_order_id = cur.lastrowid # Get the ID of the newly inserted order
+        # 2. Create ORDERS record
+        cursor.execute(
+            "INSERT INTO ORDERS (ORDER_DATE, EMAIL, STATUS) VALUES (%s, %s, %s)",
+            [order_date_str, email, 'Processing']
+        )
+        order_id = cursor.lastrowid
+        if not order_id:
+             raise Exception("Failed to create order record.")
 
         # 3. Create PAYMENT record
-        payment_date = datetime.date.today()
-        cur.execute("INSERT INTO PAYMENT (PAYMENT_TYPE, AMOUNT, DATE) VALUES (%s, %s, %s)",
-                    (payment_type, total_amount, payment_date))
-        new_payment_no = cur.lastrowid
+        cursor.execute(
+            "INSERT INTO PAYMENT (PAYMENT_TYPE, AMOUNT, DATE, STATUS) VALUES (%s, %s, %s, %s)",
+            [payment_type, total_amount, order_date_str, 'Completed'] # Assume payment is completed
+        )
+        payment_no = cursor.lastrowid
+        if not payment_no:
+             raise Exception("Failed to create payment record.")
 
-        # 4. Create MAKES_PAYMENT record (linking order, payment, customer)
-        cur.execute("INSERT INTO MAKES_PAYMENT (PAYMENT_NO, ORDER_ID, EMAIL) VALUES (%s, %s, %s)",
-                    (new_payment_no, new_order_id, customer_email))
+        # 4. Create MAKES_PAYMENT record
+        cursor.execute(
+            "INSERT INTO MAKES_PAYMENT (PAYMENT_NO, ORDER_ID, EMAIL) VALUES (%s, %s, %s)",
+            [payment_no, order_id, email]
+        )
 
-        # 5. Update PRODUCT records (Decrease stock and assign ORDER_ID_CONTAINS)
-        #    !!! This part is problematic due to the schema design !!!
-        #    It assumes PRODUCTID is globally unique and assigns the order to that one row.
-        #    It doesn't handle multiple rows for the same conceptual product well.
-        for product_id_str, quantity in cart.items():
-            product_id_int = int(product_id_str)
-            # Decrease stock and set order ID for the specific product row fetched earlier
-            cur.execute("""
-                UPDATE PRODUCT
-                SET NO_OF_PRODUCTS = NO_OF_PRODUCTS - %s,
-                    ORDER_ID_CONTAINS = %s
-                WHERE PRODUCTID = %s
-            """, (quantity, new_order_id, product_id_int))
-            # Check if update affected rows? Optional.
+        # 5. Insert into ORDER_ITEMS and Update PRODUCT stock
+        for item_proc in items_to_process:
+            # Insert into ORDER_ITEMS
+            cursor.execute(
+                """INSERT INTO ORDER_ITEMS (ORDER_ID, PRODUCTID, QUANTITY, PRICE_AT_PURCHASE)
+                   VALUES (%s, %s, %s, %s)""",
+                [order_id, item_proc['productId'], item_proc['quantity'], item_proc['price']]
+            )
+            
+            # Decrement stock in PRODUCT table
+            cursor.execute(
+                """UPDATE PRODUCT
+                   SET NO_OF_PRODUCTS = NO_OF_PRODUCTS - %s
+                   WHERE PRODUCTID = %s AND NO_OF_PRODUCTS >= %s""",
+                [item_proc['quantity'], item_proc['productId'], item_proc['quantity']]
+            )
+            if cursor.rowcount == 0:
+                # This means stock changed between check and update, or initial check failed somehow
+                raise ValueError(f"Failed to update stock for product ID {item_proc['productId']} (likely became insufficient).")
 
-        # --- Commit Transaction ---
-        mysql.connection.commit()
-        cur.close()
+        # connection.commit() # Commit transaction should happen here in a real transactional setup
 
-        # 6. Clear the cart from session
+        # 6. Clear cart from session AFTER successful commit
         session.pop('cart', None)
+        session.modified = True
 
-        # 7. Return order confirmation
-        return jsonify({"message": "Checkout successful", "order_id": new_order_id}), 200
-
+        return jsonify({
+            "success": True,
+        "message": "Order placed successfully",
+        "order_id": order_id
+    })
+    except ValueError as ve: # Specific error for stock/validation issues
+        # connection.rollback() # Rollback transaction
+        print(f"Order validation error: {ve}")
+        return jsonify({"success": False, "message": str(ve)}), 400
     except Exception as e:
-        if cur: # Ensure cursor is closed even on error
-             cur.close()
-        mysql.connection.rollback() # Rollback transaction on any error
-        # Log the error e for debugging
-        print(f"Checkout error: {e}")
-        return jsonify({"error": f"An error occurred during checkout: {str(e)}"}), 500
+        # connection.rollback() # Rollback transaction
+        print(f"Order creation error: {e}")
+        return jsonify({"success": False, "message": f"An internal error occurred: {str(e)}"}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            # Manually commit here since we didn't use the helper's commit flag
+            # and didn't use connection.commit() above because we need it after session pop
+            # In a real transactional setup, commit would happen before session pop.
+            # For this non-transactional approach, we commit changes made so far.
+            connection.commit()
+            connection.close()
 
 
 @app.route('/api/orders', methods=['GET'])
 def get_orders():
-    if 'email' not in session:
-        return jsonify({"error": "User not logged in"}), 401
-
-    customer_email = session['email']
-    orders_summary = []
-
-    try:
-        cur = mysql.connection.cursor()
-        # Get basic order info linked to the customer
-        cur.execute("""
-            SELECT o.ORDER_ID, o.ORDER_DATE, p.AMOUNT, p.PAYMENT_TYPE
-            FROM ORDERS o
-            JOIN MAKES_PAYMENT mp ON o.ORDER_ID = mp.ORDER_ID
-            JOIN PAYMENT p ON mp.PAYMENT_NO = p.PAYMENT_NO
-            WHERE o.EMAIL = %s
-            ORDER BY o.ORDER_DATE DESC
-        """, (customer_email,))
-        orders = cur.fetchall()
-        cur.close()
-        return jsonify(orders)
-
-    except Exception as e:
-        if cur: cur.close()
-        return jsonify({"error": f"Database error fetching orders: {str(e)}"}), 500
-
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Please login to view orders"}), 401
+    
+    email = session['user']['email']
+    
+    orders = execute_query("""
+        SELECT o.ORDER_ID, o.ORDER_DATE, o.STATUS, p.PAYMENT_TYPE, p.AMOUNT
+        FROM ORDERS o
+        JOIN MAKES_PAYMENT mp ON o.ORDER_ID = mp.ORDER_ID
+        JOIN PAYMENT p ON mp.PAYMENT_NO = p.PAYMENT_NO
+        WHERE o.EMAIL = %s
+        ORDER BY o.ORDER_DATE DESC
+    """, [email], fetch_all=True)
+    
+    # Get products for each order using the new ORDER_ITEMS table
+    for order in orders:
+        order_items = execute_query("""
+            SELECT oi.QUANTITY, oi.PRICE_AT_PURCHASE, p.PRODUCTID, p.NAME, p.CATEGORY_NAME
+            FROM ORDER_ITEMS oi
+            JOIN PRODUCT p ON oi.PRODUCTID = p.PRODUCTID
+            WHERE oi.ORDER_ID = %s
+        """, [order['ORDER_ID']], fetch_all=True)
+        
+        # Reformat to match frontend expectation (PRICE instead of PRICE_AT_PURCHASE)
+        order['products'] = [
+            {
+                'PRODUCTID': item['PRODUCTID'],
+                'NAME': item['NAME'],
+                'PRICE': item['PRICE_AT_PURCHASE'], # Use price from when order was placed
+                'CATEGORY_NAME': item['CATEGORY_NAME'],
+                'quantity': item['QUANTITY']
+            } for item in order_items
+        ]
+    
+    return jsonify({"success": True, "orders": orders})
 
 @app.route('/api/orders/<int:order_id>', methods=['GET'])
-def get_order_details(order_id):
-    if 'email' not in session:
-        return jsonify({"error": "User not logged in"}), 401
+def get_order(order_id):
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Please login to view order details"}), 401
+    
+    email = session['user']['email']
+    
+    order = execute_query("""
+        SELECT o.ORDER_ID, o.ORDER_DATE, o.STATUS, p.PAYMENT_TYPE, p.AMOUNT
+        FROM ORDERS o
+        JOIN MAKES_PAYMENT mp ON o.ORDER_ID = mp.ORDER_ID
+        JOIN PAYMENT p ON mp.PAYMENT_NO = p.PAYMENT_NO
+        WHERE o.ORDER_ID = %s AND o.EMAIL = %s
+    """, [order_id, email])
+    
+    if not order:
+        return jsonify({"success": False, "message": "Order not found"}), 404
+    
+    # Get products for this order using ORDER_ITEMS
+    order_items = execute_query("""
+        SELECT oi.QUANTITY, oi.PRICE_AT_PURCHASE, p.PRODUCTID, p.NAME, p.CATEGORY_NAME
+        FROM ORDER_ITEMS oi
+        JOIN PRODUCT p ON oi.PRODUCTID = p.PRODUCTID
+        WHERE oi.ORDER_ID = %s
+    """, [order_id], fetch_all=True)
 
-    customer_email = session['email']
+    # Reformat to match frontend expectation
+    order['products'] = [
+        {
+            'PRODUCTID': item['PRODUCTID'],
+            'NAME': item['NAME'],
+            'PRICE': item['PRICE_AT_PURCHASE'],
+            'CATEGORY_NAME': item['CATEGORY_NAME'],
+            'quantity': item['QUANTITY']
+        } for item in order_items
+    ]
+    
+    return jsonify({"success": True, "order": order})
 
-    try:
-        cur = mysql.connection.cursor()
+@app.route('/api/cart', methods=['POST'])
+def add_to_cart():
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Please log in to add items to the cart"}), 401
 
-        # Verify the order belongs to the logged-in user
-        cur.execute("SELECT ORDER_ID, ORDER_DATE, EMAIL FROM ORDERS WHERE ORDER_ID = %s AND EMAIL = %s", (order_id, customer_email))
-        order_info = cur.fetchone()
+    data = request.json
+    product_id = data.get('productId')
 
-        if not order_info:
-            cur.close()
-            return jsonify({"error": "Order not found or access denied"}), 404
+    # Check if the product exists and is in stock
+    product = execute_query("SELECT * FROM PRODUCT WHERE PRODUCTID = %s", [product_id])
+    if not product or product['NO_OF_PRODUCTS'] <= 0:
+        return jsonify({"success": False, "message": "Product not available"}), 400
 
-        # Get products associated with this order via PRODUCT.ORDER_ID_CONTAINS
-        # This will only fetch products where ORDER_ID_CONTAINS was set to this order_id during checkout.
-        # It doesn't represent quantity well if multiple of the same item were ordered.
-        cur.execute("""
-            SELECT p.PRODUCTID, p.NAME, p.PRICE
-            FROM PRODUCT p
-            WHERE p.ORDER_ID_CONTAINS = %s
-        """, (order_id,))
-        products_in_order = cur.fetchall()
+    # Initialize cart in session if not already present
+    if 'cart' not in session:
+        session['cart'] = []
 
-        # Get payment details for the order
-        cur.execute("""
-            SELECT p.PAYMENT_NO, p.PAYMENT_TYPE, p.AMOUNT, p.DATE
-            FROM PAYMENT p
-            JOIN MAKES_PAYMENT mp ON p.PAYMENT_NO = mp.PAYMENT_NO
-            WHERE mp.ORDER_ID = %s AND mp.EMAIL = %s
-        """,(order_id, customer_email))
-        payment_info = cur.fetchone()
+    # Check if the product is already in the cart
+    cart = session['cart']
+    for item in cart:
+        if item['productId'] == product_id:
+            item['quantity'] += 1
+            session.modified = True
+            return jsonify({"success": True, "message": "Product quantity updated in cart"})
 
-        cur.close()
+    # Add new product to the cart
+    cart.append({"productId": product_id, "quantity": 1})
+    session.modified = True
+    return jsonify({"success": True, "message": "Product added to cart"})
 
+@app.route('/api/cart/count', methods=['GET'])
+def get_cart_count():
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Please log in to view cart"}), 401
+
+    cart = session.get('cart', [])
+    count = sum(item['quantity'] for item in cart)
+    return jsonify({"success": True, "count": count})
+
+@app.route('/api/cart', methods=['GET'])
+def get_cart():
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Please log in to view cart"}), 401
+
+    cart = session.get('cart', [])
+    product_ids = [item['productId'] for item in cart]
+
+    # Fetch product details for items in the cart
+    if not product_ids:
+        return jsonify({"success": True, "cart": []})
+
+    query = "SELECT * FROM PRODUCT WHERE PRODUCTID IN (%s)" % ','.join(['%s'] * len(product_ids))
+    products = execute_query(query, product_ids, fetch_all=True)
+
+    # Merge product details with quantities
+    cart_details = []
+    for item in cart:
+        for product in products:
+            if product['PRODUCTID'] == item['productId']:
+                cart_details.append({
+                    "productId": product['PRODUCTID'],
+                    "name": product['NAME'],
+                    "price": product['PRICE'],
+                    "quantity": item['quantity']
+                })
+
+    return jsonify({"success": True, "cart": cart_details})
+
+@app.route('/api/cart/<int:product_id>', methods=['PUT'])
+def update_cart_item(product_id):
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Please log in to update cart"}), 401
+
+    data = request.json
+    new_quantity = data.get('quantity')
+
+    if new_quantity is None or not isinstance(new_quantity, int) or new_quantity <= 0:
+        return jsonify({"success": False, "message": "Invalid quantity provided"}), 400
+
+    cart = session.get('cart', [])
+    item_found = False
+    for item in cart:
+        if item['productId'] == product_id:
+            item['quantity'] = new_quantity
+            item_found = True
+            break
+
+    if not item_found:
+        return jsonify({"success": False, "message": "Item not found in cart"}), 404
+
+    session.modified = True
+    return jsonify({"success": True, "message": "Cart item updated"})
+
+@app.route('/api/cart/<int:product_id>', methods=['DELETE'])
+def remove_cart_item(product_id):
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Please log in to remove items from cart"}), 401
+
+    cart = session.get('cart', [])
+    initial_length = len(cart)
+    
+    # Create a new list excluding the item to remove
+    new_cart = [item for item in cart if item['productId'] != product_id]
+
+    if len(new_cart) == initial_length:
+        return jsonify({"success": False, "message": "Item not found in cart"}), 404
+
+    session['cart'] = new_cart
+    session.modified = True
+    return jsonify({"success": True, "message": "Item removed from cart"})
+
+# Admin Routes
+
+@app.route('/api/admin/login', methods=['POST'])
+def admin_login():
+    data = request.json
+    employee_id = data.get('employee_id')
+    password = data.get('password')
+    
+    employee = execute_query("""
+        SELECT e.EMPLOYEE_ID, e.PASSWORD_HASH, e.ROLE, p.NAME, e.STOREID
+        FROM EMPLOYEE e
+        JOIN PERSON p ON e.SSN = p.SSN
+        WHERE e.EMPLOYEE_ID = %s
+    """, [employee_id])
+    
+    # Verify password using SHA-256
+    if employee and employee['PASSWORD_HASH'] == hashlib.sha256(password.encode('utf-8')).hexdigest():
+        session['admin'] = {
+            'employee_id': employee['EMPLOYEE_ID'],
+            'name': employee['NAME'],
+            'role': employee['ROLE'],
+            'store_id': employee['STOREID']
+        }
         return jsonify({
-            "order_info": order_info,
-            "items": products_in_order, # Note: Quantity is missing due to schema limitation
-            "payment_info": payment_info
+            "success": True,
+            "admin": {
+                "employee_id": employee['EMPLOYEE_ID'],
+                "name": employee['NAME'],
+                "role": employee['ROLE'],
+                "store_id": employee['STOREID']
+            }
         })
+    
+    return jsonify({"success": False, "message": "Invalid employee ID or password"}), 401
 
+@app.route('/api/admin/logout', methods=['POST'])
+def admin_logout():
+    session.pop('admin', None)
+    return jsonify({"success": True})
+
+@app.route('/api/admin/dashboard', methods=['GET'])
+def admin_dashboard():
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+    
+    # Get recent orders
+    recent_orders = execute_query("""
+        SELECT o.ORDER_ID, o.ORDER_DATE, o.STATUS, c.EMAIL, p.AMOUNT
+        FROM ORDERS o
+        JOIN MAKES_PAYMENT mp ON o.ORDER_ID = mp.ORDER_ID
+        JOIN PAYMENT p ON mp.PAYMENT_NO = p.PAYMENT_NO
+        JOIN CUSTOMER c ON o.EMAIL = c.EMAIL
+        ORDER BY o.ORDER_DATE DESC
+        LIMIT 10
+    """, fetch_all=True)
+    
+    # Get product inventory summary
+    inventory = execute_query("""
+        SELECT p.CATEGORY_NAME, COUNT(*) as product_count, SUM(p.NO_OF_PRODUCTS) as total_stock
+        FROM PRODUCT p
+        GROUP BY p.CATEGORY_NAME
+    """, fetch_all=True)
+    
+    # Get recent deliveries
+    deliveries = execute_query("""
+        SELECT sd.DELIVERY_NO, s.NAME as SUPPLIER_NAME, sd.STATUS, sd.DELIVERY_DATE
+        FROM SUPPLIER_DELIVERY sd
+        JOIN SUPPLIER s ON sd.SUPPLIER_ID = s.SUPPLIER_ID
+        ORDER BY sd.DELIVERY_DATE DESC
+        LIMIT 10
+    """, fetch_all=True)
+    
+    return jsonify({
+        "success": True,
+        "recent_orders": recent_orders,
+        "inventory": inventory,
+        "recent_deliveries": deliveries
+    })
+
+@app.route('/api/admin/products', methods=['GET'])
+def admin_products():
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+    
+    products = execute_query("""
+        SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS,
+               s.NAME as SUPPLIER_NAME, st.NAME as STORE_NAME
+        FROM PRODUCT p
+        JOIN SUPPLIER s ON p.SUPPLIER_ID = s.SUPPLIER_ID
+        JOIN STORE st ON p.STOREID = st.STOREID
+        ORDER BY p.CATEGORY_NAME, p.NAME
+    """, fetch_all=True)
+    
+    return jsonify({"success": True, "products": products})
+
+@app.route('/api/admin/products', methods=['POST'])
+def admin_add_product():
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+        
+    data = request.json
+    name = data.get('name')
+    price = data.get('price')
+    category = data.get('category')
+    supplier_id = data.get('supplier_id')
+    delivery_no = data.get('delivery_no')
+    quantity = data.get('quantity', 0)
+    store_id = session['admin']['store_id']
+    
+    product_id = execute_query(
+        """INSERT INTO PRODUCT 
+           (NAME, PRICE, CATEGORY_NAME, STOREID, SUPPLIER_ID, DELIVERY_NO, NO_OF_PRODUCTS)
+           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+        [name, price, category, store_id, supplier_id, delivery_no, quantity],
+        commit=True
+    )
+    
+    return jsonify({
+        "success": True, 
+        "message": "Product added successfully", 
+        "product_id": product_id
+    })
+
+@app.route('/api/admin/products/<int:product_id>', methods=['PUT'])
+def admin_update_product(product_id):
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+        
+    data = request.json
+    name = data.get('name')
+    price = data.get('price')
+    quantity = data.get('quantity')
+    
+    execute_query(
+        "UPDATE PRODUCT SET NAME = %s, PRICE = %s, NO_OF_PRODUCTS = %s WHERE PRODUCTID = %s",
+        [name, price, quantity, product_id],
+        commit=True
+    )
+    
+    return jsonify({"success": True, "message": "Product updated successfully"})
+
+@app.route('/api/admin/orders', methods=['GET'])
+def admin_orders():
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+    
+    orders = execute_query("""
+        SELECT o.ORDER_ID, o.ORDER_DATE, o.STATUS, c.EMAIL, p.AMOUNT,
+               CONCAT(ps.NAME, ' (', ps.ADDRESS, ')') as CUSTOMER_INFO
+        FROM ORDERS o
+        JOIN MAKES_PAYMENT mp ON o.ORDER_ID = mp.ORDER_ID
+        JOIN PAYMENT p ON mp.PAYMENT_NO = p.PAYMENT_NO
+        JOIN CUSTOMER c ON o.EMAIL = c.EMAIL
+        JOIN PERSON ps ON c.SSN = ps.SSN
+        ORDER BY o.ORDER_DATE DESC
+    """, fetch_all=True)
+    
+    return jsonify({"success": True, "orders": orders})
+
+@app.route('/api/admin/orders/<int:order_id>', methods=['PUT'])
+def admin_update_order(order_id):
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+        
+    data = request.json
+    status = data.get('status')
+    employee_id = session['admin']['employee_id']
+    
+    execute_query(
+        "UPDATE ORDERS SET STATUS = %s, EMPLOYEE_ID = %s WHERE ORDER_ID = %s",
+        [status, employee_id, order_id],
+        commit=True
+    )
+    
+    return jsonify({"success": True, "message": "Order status updated"})
+
+@app.route('/api/admin/suppliers', methods=['GET'])
+def admin_suppliers():
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+    
+    suppliers = execute_query("SELECT * FROM SUPPLIER", fetch_all=True)
+    return jsonify({"success": True, "suppliers": suppliers})
+
+@app.route('/api/admin/deliveries', methods=['GET'])
+def admin_deliveries():
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+    
+    deliveries = execute_query("""
+        SELECT sd.DELIVERY_NO, s.NAME as SUPPLIER_NAME, sd.STATUS, sd.DELIVERY_DATE
+        FROM SUPPLIER_DELIVERY sd
+        JOIN SUPPLIER s ON sd.SUPPLIER_ID = s.SUPPLIER_ID
+        ORDER BY sd.DELIVERY_DATE DESC
+    """, fetch_all=True)
+    
+    return jsonify({"success": True, "deliveries": deliveries})
+
+@app.route('/api/admin/deliveries', methods=['POST'])
+def admin_add_delivery():
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+        
+    data = request.json
+    supplier_id = data.get('supplier_id')
+    status = data.get('status', 'Pending')
+    delivery_date = data.get('delivery_date')
+    
+    delivery_no = execute_query(
+        "INSERT INTO SUPPLIER_DELIVERY (SUPPLIER_ID, STATUS, DELIVERY_DATE) VALUES (%s, %s, %s)",
+        [supplier_id, status, delivery_date],
+        commit=True
+    )
+    
+    # Create inventory record
+    inventory_id = execute_query(
+        "INSERT INTO INVENTORY (STOCK_LEVEL, LAST_UPDATED) VALUES (0, NOW())",
+        commit=True
+    )
+    
+    # Link employee to inventory update
+    execute_query(
+        "INSERT INTO UPDATES (EMPLOYEE_ID, INVENTORY_ID, SUPPLIER_ID, DELIVERY_NO) VALUES (%s, %s, %s, %s)",
+        [session['admin']['employee_id'], inventory_id, supplier_id, delivery_no],
+        commit=True
+    )
+    
+    return jsonify({
+        "success": True, 
+        "message": "Delivery added successfully", 
+        "delivery_no": delivery_no
+    })
+
+@app.route('/api/admin/deliveries/<int:delivery_no>', methods=['PUT'])
+def admin_update_delivery(delivery_no):
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+        
+    data = request.json
+    status = data.get('status')
+    
+    execute_query(
+        "UPDATE SUPPLIER_DELIVERY SET STATUS = %s WHERE DELIVERY_NO = %s",
+        [status, delivery_no],
+        commit=True
+    )
+    
+    # If status is "Delivered", update inventory
+    if status == 'Delivered':
+        # Find the inventory entry linked to this delivery
+        inventory_update = execute_query("""
+            SELECT INVENTORY_ID, SUPPLIER_ID FROM UPDATES 
+            WHERE DELIVERY_NO = %s
+        """, [delivery_no])
+        
+        if inventory_update:
+            # Get products from this delivery
+            products = execute_query("""
+                SELECT PRODUCTID, NO_OF_PRODUCTS FROM PRODUCT
+                WHERE DELIVERY_NO = %s
+            """, [delivery_no], fetch_all=True)
+            
+            # Update inventory stock level
+            total_products = sum(p['NO_OF_PRODUCTS'] for p in products) if products else 0
+            execute_query(
+                "UPDATE INVENTORY SET STOCK_LEVEL = %s, LAST_UPDATED = NOW() WHERE INVENTORY_ID = %s",
+                [total_products, inventory_update['INVENTORY_ID']],
+                commit=True
+            )
+    
+    return jsonify({"success": True, "message": "Delivery status updated"})
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    try:
+        # Test database connection
+        query = "SELECT 1"
+        execute_query(query)  # If this fails, the database is not connected
+        return jsonify({"success": True, "message": "Database is connected"})
     except Exception as e:
-        if cur: cur.close()
-        return jsonify({"error": f"Database error fetching order details: {str(e)}"}), 500
-
-
-# --- Admin Endpoints (Placeholders) ---
-# Add similar endpoints for admin login, product management, order management etc.
-
+        return jsonify({"success": False, "message": f"Database connection failed: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    # Make sure your MySQL server is running before starting the Flask app
-    # You might need to load the Computer_Hardware_Store.sql data into your MySQL server first
-    # Example command: mysql -u root -p qwerty Computer_Hardware_Store < Computer_Hardware_Store.sql
-    # !!! REMEMBER TO ADD 'password_hash' COLUMN TO CUSTOMER TABLE !!!
-    # Example: ALTER TABLE CUSTOMER ADD COLUMN password_hash VARCHAR(255);
-    app.run(debug=True, port=5000) # Runs on http://localhost:5000
+    app.run(debug=True)

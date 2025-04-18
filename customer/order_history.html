@@ -4,25 +4,25 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Order History - Byte Hub</title>
-    <link rel="stylesheet" href="../assets/css/styles.css"/>
+    <link rel="stylesheet" href="/assets/css/styles.css"/> <!-- Root-relative path -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"/>
 </head>
 <body>
     <!-- Header -->
     <header>
         <div class="logo">
-            <img src="../assets/images/logo.png" alt="Site Logo" class="logo-image" width="100" height="50"/>
+            <img src="/assets/images/logo.png" alt="Site Logo" class="logo-image" width="100" height="50"/> <!-- Root-relative path -->
             <span class="site-name">Byte Hub</span>
         </div>
         <nav>
-            <a href="../index.html">Home</a>
-            <a href="product-listing.html">Products</a>
-            <a href="order_history.html">Order</a>
-            <a href="login.html">Login</a>
+            <a href="/">Home</a> <!-- Root path -->
+            <a href="/customer/product-listing.html">Products</a> <!-- Root-relative path -->
+            <a href="/customer/order_history.html">Order</a> <!-- Root-relative path -->
+            <a href="/customer/login.html">Login</a> <!-- Root-relative path -->
         </nav>
         <div class="header-icons">
             <i class="fas fa-search"></i>
-            <a href="cart.html">
+            <a href="/customer/cart.html"> <!-- Root-relative path -->
                 <div>
                     <i class="fas fa-shopping-cart"></i>
                     <span id="cart-count">Cart (0)</span>
@@ -45,9 +45,9 @@
             <div class="payment-methods">
                 <p>We Accept:</p>
                 <div>
-                    <img src="../assets/images/Visa.png" alt="Visa" class="payment-logo"/>
-                    <img src="../assets/images/Mastercard.png" alt="MasterCard" class="payment-logo"/>
-                    <img src="../assets/images/American_Express.png" alt="American Express" class="payment-logo"/>
+                    <img src="/assets/images/Visa.png" alt="Visa" class="payment-logo"/> <!-- Root-relative path -->
+                    <img src="/assets/images/Mastercard.png" alt="MasterCard" class="payment-logo"/> <!-- Root-relative path -->
+                    <img src="/assets/images/American_Express.png" alt="American Express" class="payment-logo"/> <!-- Root-relative path -->
                 </div>
             </div>
             <div class="footer-links">
@@ -67,6 +67,6 @@
         </div>
     </footer>
 
-    <script src="../assets/js/order-history.js"></script>
+    <script src="/assets/js/order_history.js"></script> <!-- Root-relative path -->
 </body>
 </html>
