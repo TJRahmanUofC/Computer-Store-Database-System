@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Employee Management - Byte Hub</title>
+    <link rel="stylesheet" href="../assets/css/styles.css"/>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <img src="../assets/images/logo.png" alt="Site Logo" class="logo-image" width="100" height="50"/>
+            <span class="site-name">Byte Hub</span>
+        </div>
+        <nav>
+            <a href="dashboard.html">Dashboard</a>
+        </nav>
+    </header>
+
+    <!-- Employee Management Section -->
+    <section class="employee-management">
+        <h2>Employee Management</h2>
+        <div id="employee-list">
+            <p>Loading employees...</p> <!-- JavaScript will populate this -->
+        </div>
+        <button id="remove-employee-button" class="dashboard-button" disabled>Remove Employee</button>
+        
+        <!-- Add Employee Form -->
+        <h3>Add New Employee</h3>
+        <form id="add-employee-form">
+            <label for="employee-id">Employee ID:</label>
+            <input type="number" id="employee-id" required />
+
+            <label for="employee-ssn">SSN:</label>
+            <input type="number" id="employee-ssn" required />
+
+            <label for="employee-role">Role:</label>
+            <input type="text" id="employee-role" maxlength="50" />
+
+            <label for="employee-storeid">Store ID:</label>
+            <input type="number" id="employee-storeid" required />
+
+            <button type="submit" class="dashboard-button">Add Employee</button>
+        </form>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 Byte Hub. All rights reserved.</p>
+    </footer>
+
+    <script src="../assets/js/employee_management.js"></script>
+</body>
+</html>
