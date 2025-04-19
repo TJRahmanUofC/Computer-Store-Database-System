@@ -3,17 +3,17 @@ document.addEventListener("DOMContentLoaded", function () {
     const orderIdElement = document.getElementById("order-id");
 
     // Fetch the latest order details from the backend
-    fetch('/api/orders', { method: 'GET', credentials: 'include' })
+    fetch('http://127.0.0.1:5000/api/orders', { method: 'GET', credentials: 'include' }) // Use absolute URL for consistency
         .then(response => response.json())
         .then(data => {
             if (data.success && data.orders.length > 0) {
                 const latestOrder = data.orders[0]; // Assuming the latest order is the first one
-                const orderId = latestOrder.ORDER_ID;
+                const orderNumber = latestOrder.ORDER_NUMBER; // Use ORDER_NUMBER from the API response
                 const orderDate = new Date(latestOrder.ORDER_DATE).toLocaleDateString();
                 const items = latestOrder.products;
                 const totalAmount = latestOrder.AMOUNT;
 
-                orderIdElement.textContent = `#${orderId}`;
+                orderIdElement.textContent = `#${orderNumber}`; // Display the user-facing order number
                 orderDetailsContainer.innerHTML = "<ul>";
 
                 items.forEach(item => {

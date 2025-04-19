@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const historyContainer = document.getElementById("order-history-container");
 
     // Fetch order history from the backend
-    fetch('http://127.0.0.1:5000/api/orders', { method: 'GET', credentials: 'include' })
+    fetch('http://127.0.0.1:5000/api/orders', { method: 'GET', credentials: 'include' }) // Use absolute URL for consistency
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -16,13 +16,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     orderHistory.forEach(order => {
                         let orderHTML = `
                             <div class="order-card">
-                                <h3>Order ID: #${order.ORDER_ID}</h3>
+                                <h3>Order: #${order.ORDER_NUMBER}</h3> 
                                 <p>Date: ${new Date(order.ORDER_DATE).toLocaleDateString()}</p>
+                                <p>Status: <strong>${order.STATUS}</strong></p> 
                                 <ul>
                         `;
 
                         order.products.forEach(item => {
-                            orderHTML += `<li>${item.quantity}x ${item.NAME} - $${(item.PRICE * item.quantity).toFixed(2)}</li>`;
+                            // Display quantity, name, unit price (@ $X.XX each), and line total
+                            orderHTML += `<li>${item.quantity}x ${item.NAME} (@ $${item.PRICE.toFixed(2)} each) - Total: $${(item.PRICE * item.quantity).toFixed(2)}</li>`;
                         });
 
                         orderHTML += `</ul>
