@@ -1154,4 +1154,147 @@ h2 {
     background-color: #27ae60;
 }
 
+/* Product Management Section */
+.category-section {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.category-section h3 {
+    font-size: 1.5rem;
+    color: #3498db;
+    margin-bottom: 1rem;
+}
+
+.product-dropdown {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.product-details {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.product-details p {
+    margin: 0.5rem 0;
+    color: #555;
+}
+
+.product-details input {
+    width: 60px;
+    padding: 0.5rem;
+    margin-right: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.update-stock-button,
+.remove-product-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+    transition: background-color 0.3s ease;
+}
+
+.update-stock-button:hover {
+    background-color: #2980b9;
+}
+
+.remove-product-button {
+    background-color: #e74c3c;
+}
+
+.remove-product-button:hover {
+    background-color: #c0392b;
+}
+
+.product-management {
+    padding: 2rem;
+    background-color: #ecf0f1;
+    text-align: center;
+}
+
+#category-select {
+    padding: 0.75rem;
+    margin: 1rem 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.product-item {
+    background-color: #fff;
+    padding: 1rem;
+    margin: 1rem auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: left;
+    max-width: 600px;
+}
+
+.product-item h3 {
+    font-size: 1.25rem;
+    color: #3498db;
+    margin-bottom: 0.5rem;
+}
+
+.product-item p {
+    margin: 0.5rem 0;
+    color: #555;
+}
+
+.product-item input {
+    width: 60px;
+    padding: 0.5rem;
+    margin-right: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.update-stock-button,
+.remove-product-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+    transition: background-color 0.3s ease;
+}
+
+.update-stock-button:hover {
+    background-color: #2980b9;
+}
+
+.remove-product-button {
+    background-color: #e74c3c;
+}
+
+.remove-product-button:hover {
+    background-color: #c0392b;
+}
+
 
