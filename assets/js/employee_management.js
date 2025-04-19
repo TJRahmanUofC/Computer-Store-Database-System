@@ -59,9 +59,18 @@ document.addEventListener("DOMContentLoaded", function () {
     addEmployeeForm.addEventListener("submit", function (event) {
         event.preventDefault();
 
+        const phoneInput = document.getElementById("employee-phone").value;
+        if (phoneInput.length !== 10) {
+            alert("Phone number must be exactly 10 digits.");
+            return;
+        }
+
         const newEmployee = {
             EMPLOYEE_ID: parseInt(document.getElementById("employee-id").value),
             SSN: parseInt(document.getElementById("employee-ssn").value),
+            NAME: document.getElementById("employee-name").value,
+            PHONE: parseInt(phoneInput), 
+            ADDRESS: document.getElementById("employee-address").value,
             ROLE: document.getElementById("employee-role").value || null,
             STOREID: parseInt(document.getElementById("employee-storeid").value),
         };
