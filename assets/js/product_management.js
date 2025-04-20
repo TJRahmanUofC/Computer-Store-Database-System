@@ -7,18 +7,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     
     function fetchData() {
-        fetch("../mockup.json")
-            .then(response => response.json())
-            .then(data => {
-                categories = [...new Set(data.PRODUCT.map(product => product.CATEGORY_NAME))]; // Unique categories
-                products = data.PRODUCT;
-                // call dynamic update function
+        Promise.all([
+            fetch("http://127.0.0.1:5000/api/admin/products", { method: "GET", credentials: "include" }),
+            fetch("http://127.0.0.1:5000/api/categories", { method: "GET", credentials: "include" })
+        ])
+        .then(async ([productRes, categoryRes]) => {
+            const productData = await productRes.json();
+            const categoryData = await categoryRes.json();
+    
+            if (productData.success && categoryData.success) {
+                products = productData.products;
+                categories = categoryData.categories.map(cat => cat.CATEGORY_NAME);
                 populateCategoryDropdown();
-            })
-            .catch(error => {
-                console.error("Error loading products and categories:", error);
-                productListContainer.innerHTML = "<p>Failed to load categories and products.</p>";
-            });
+            } else {
+                throw new Error("Failed to fetch product/category data.");
+            }
+        })
+        .catch(error => {
+            console.error("Error loading products and categories:", error);
+            productListContainer.innerHTML = "<p>Failed to load categories and products.</p>";
+        });
     }
 
     // populate category dropdown, updates if new categories are added or removed
@@ -75,26 +83,57 @@ document.addEventListener("DOMContentLoaded", function () {
                     alert("Please enter a valid stock number.");
                     return;
                 }
-
-                product.NO_OF_PRODUCTS = newStock;
-                console.log("Updated Product Stock:", product);
-
-                alert("Stock updated successfully!");
+            
+                fetch(`http://127.0.0.1:5000/api/admin/products/${product.PRODUCTID}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        name: product.NAME,
+                        price: product.PRICE,
+                        quantity: newStock
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        product.NO_OF_PRODUCTS = newStock;
+                        alert("Stock updated successfully!");
+                    } else {
+                        alert("Failed to update stock: " + data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error updating stock:", err);
+                    alert("Error updating stock. Try again.");
+                });
             });
 
             // remove product functionality
             removeProductButton.addEventListener("click", function () {
                 if (confirm(`Are you sure you want to remove ${product.NAME}?`)) {
-                    const productIndex = products.findIndex(p => p.PRODUCTID === product.PRODUCTID);
-                    products.splice(productIndex, 1);
-                    console.log("Updated Products List:", products);
-
-                    alert("Product removed successfully!");
-                    productDiv.remove();
-
-                    // Refresh categories in case the removed product was the last in its category
-                    categories = [...new Set(products.map(product => product.CATEGORY_NAME))];
-                    populateCategoryDropdown();
+                    fetch(`http://127.0.0.1:5000/api/admin/products/${product.PRODUCTID}`, {
+                        method: "DELETE",
+                        credentials: "include"
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert("Product removed successfully!");
+                            productDiv.remove();
+            
+                            // Update the products array and refresh categories
+                            products = products.filter(p => p.PRODUCTID !== product.PRODUCTID);
+                            categories = [...new Set(products.map(p => p.CATEGORY_NAME))];
+                            populateCategoryDropdown();
+                        } else {
+                            alert("Failed to remove product: " + data.message);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error removing product:", err);
+                        alert("Error removing product. Try again.");
+                    });
                 }
             });
 

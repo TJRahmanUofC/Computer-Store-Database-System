@@ -231,6 +231,17 @@ def get_product(product_id):
         "related_products": related_products
     })
 
+@app.route('/api/admin/products/<int:product_id>', methods=['DELETE'])
+def admin_delete_product(product_id):
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+
+    try:
+        execute_query("DELETE FROM PRODUCT WHERE PRODUCTID = %s", [product_id], commit=True)
+        return jsonify({"success": True, "message": "Product deleted successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @app.route('/api/categories', methods=['GET'])
 def get_categories():
     categories = execute_query("SELECT * FROM CATEGORY", fetch_all=True)
