@@ -252,7 +252,8 @@ def create_order():
     data = request.json
     shipping_info = data.get('shipping_info', {}) # Currently unused for order storage
     payment_info = data.get('payment_info', {})
-    payment_type = payment_info.get('card_name', 'Credit Card') # Use card name as type, or default
+    # Get the actual payment_type sent from the frontend
+    payment_type = payment_info.get('payment_type', 'Unknown') # Default to 'Unknown' if not provided
 
     email = session['user']['email']
     order_date_str = datetime.now().strftime('%Y-%m-%d')
