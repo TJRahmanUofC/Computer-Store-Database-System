@@ -252,7 +252,8 @@ def create_order():
     data = request.json
     shipping_info = data.get('shipping_info', {}) # Currently unused for order storage
     payment_info = data.get('payment_info', {})
-    payment_type = payment_info.get('card_name', 'Credit Card') # Use card name as type, or default
+    # Get the actual payment_type sent from the frontend
+    payment_type = payment_info.get('payment_type', 'Unknown') # Default to 'Unknown' if not provided
 
     email = session['user']['email']
     order_date_str = datetime.now().strftime('%Y-%m-%d')
@@ -301,12 +302,20 @@ def create_order():
                 'price': product_db['PRICE'] # Use fetched price
             })
 
-        # 2. Create ORDERS record
+        # 2. Generate unique ORDER_NUMBER and Create ORDERS record
+        while True:
+            random_digits = str(random.randint(100000, 999999))
+            order_number = f"ORD-{random_digits}"
+            # Check if order_number already exists (unlikely but good practice)
+            cursor.execute("SELECT 1 FROM ORDERS WHERE ORDER_NUMBER = %s", [order_number])
+            if not cursor.fetchone():
+                break # Unique number found
+
         cursor.execute(
-            "INSERT INTO ORDERS (ORDER_DATE, EMAIL, STATUS) VALUES (%s, %s, %s)",
-            [order_date_str, email, 'Processing']
+            "INSERT INTO ORDERS (ORDER_DATE, ORDER_NUMBER, EMAIL, STATUS) VALUES (%s, %s, %s, %s)",
+            [order_date_str, order_number, email, 'Pending'] # Use generated order_number, set status to Pending
         )
-        order_id = cursor.lastrowid
+        order_id = cursor.lastrowid # Internal DB ID
         if not order_id:
              raise Exception("Failed to create order record.")
 
@@ -353,9 +362,10 @@ def create_order():
 
         return jsonify({
             "success": True,
-        "message": "Order placed successfully",
-        "order_id": order_id
-    })
+            "message": "Order placed successfully",
+            "order_id": order_id, # Internal ID
+            "order_number": order_number # User-facing ID
+        })
     except ValueError as ve: # Specific error for stock/validation issues
         # connection.rollback() # Rollback transaction
         print(f"Order validation error: {ve}")
@@ -384,16 +394,27 @@ def get_orders():
     email = session['user']['email']
     
     orders = execute_query("""
-        SELECT o.ORDER_ID, o.ORDER_DATE, o.STATUS, p.PAYMENT_TYPE, p.AMOUNT
+        SELECT o.ORDER_ID, o.ORDER_NUMBER, o.ORDER_DATE, o.STATUS, p.PAYMENT_TYPE, p.AMOUNT
         FROM ORDERS o
         JOIN MAKES_PAYMENT mp ON o.ORDER_ID = mp.ORDER_ID
         JOIN PAYMENT p ON mp.PAYMENT_NO = p.PAYMENT_NO
         WHERE o.EMAIL = %s
         ORDER BY o.ORDER_DATE DESC
     """, [email], fetch_all=True)
+
+    if orders is None: # Handle potential database error from execute_query
+        return jsonify({"success": False, "message": "Failed to retrieve orders from database."}), 500
     
     # Get products for each order using the new ORDER_ITEMS table
     for order in orders:
+        # Convert AMOUNT to float before processing items
+        if order.get('AMOUNT') is not None:
+            try:
+                order['AMOUNT'] = float(order['AMOUNT'])
+            except (ValueError, TypeError):
+                print(f"Warning: Could not convert order AMOUNT {order.get('AMOUNT')} to float for order ID {order.get('ORDER_ID')}")
+                order['AMOUNT'] = 0.0 # Default or handle as appropriate
+
         order_items = execute_query("""
             SELECT oi.QUANTITY, oi.PRICE_AT_PURCHASE, p.PRODUCTID, p.NAME, p.CATEGORY_NAME
             FROM ORDER_ITEMS oi
@@ -401,16 +422,24 @@ def get_orders():
             WHERE oi.ORDER_ID = %s
         """, [order['ORDER_ID']], fetch_all=True)
         
-        # Reformat to match frontend expectation (PRICE instead of PRICE_AT_PURCHASE)
-        order['products'] = [
-            {
-                'PRODUCTID': item['PRODUCTID'],
-                'NAME': item['NAME'],
-                'PRICE': item['PRICE_AT_PURCHASE'], # Use price from when order was placed
-                'CATEGORY_NAME': item['CATEGORY_NAME'],
-                'quantity': item['QUANTITY']
-            } for item in order_items
-        ]
+        # Reformat to match frontend expectation and convert PRICE_AT_PURCHASE to float
+        order['products'] = []
+        if order_items: # Check if order_items were fetched successfully
+            for item in order_items:
+                try:
+                    price_float = float(item['PRICE_AT_PURCHASE'])
+                except (ValueError, TypeError):
+                     print(f"Warning: Could not convert PRICE_AT_PURCHASE {item.get('PRICE_AT_PURCHASE')} to float for product ID {item.get('PRODUCTID')} in order ID {order.get('ORDER_ID')}")
+                     price_float = 0.0 # Default or handle as appropriate
+
+                order['products'].append({
+                    'PRODUCTID': item['PRODUCTID'],
+                    'NAME': item['NAME'],
+                    'PRICE': price_float, # Send as float
+                    'CATEGORY_NAME': item['CATEGORY_NAME'],
+                    'quantity': item['QUANTITY']
+                })
+        # If order_items fetch failed, order['products'] will remain empty
     
     return jsonify({"success": True, "orders": orders})
 
@@ -422,7 +451,7 @@ def get_order(order_id):
     email = session['user']['email']
     
     order = execute_query("""
-        SELECT o.ORDER_ID, o.ORDER_DATE, o.STATUS, p.PAYMENT_TYPE, p.AMOUNT
+        SELECT o.ORDER_ID, o.ORDER_NUMBER, o.ORDER_DATE, o.STATUS, p.PAYMENT_TYPE, p.AMOUNT
         FROM ORDERS o
         JOIN MAKES_PAYMENT mp ON o.ORDER_ID = mp.ORDER_ID
         JOIN PAYMENT p ON mp.PAYMENT_NO = p.PAYMENT_NO
@@ -431,7 +460,15 @@ def get_order(order_id):
     
     if not order:
         return jsonify({"success": False, "message": "Order not found"}), 404
-    
+
+    # Convert AMOUNT to float
+    if order.get('AMOUNT') is not None:
+        try:
+            order['AMOUNT'] = float(order['AMOUNT'])
+        except (ValueError, TypeError):
+            print(f"Warning: Could not convert order AMOUNT {order.get('AMOUNT')} to float for order ID {order_id}")
+            order['AMOUNT'] = 0.0 # Default or handle as appropriate
+            
     # Get products for this order using ORDER_ITEMS
     order_items = execute_query("""
         SELECT oi.QUANTITY, oi.PRICE_AT_PURCHASE, p.PRODUCTID, p.NAME, p.CATEGORY_NAME
@@ -440,17 +477,25 @@ def get_order(order_id):
         WHERE oi.ORDER_ID = %s
     """, [order_id], fetch_all=True)
 
-    # Reformat to match frontend expectation
-    order['products'] = [
-        {
-            'PRODUCTID': item['PRODUCTID'],
-            'NAME': item['NAME'],
-            'PRICE': item['PRICE_AT_PURCHASE'],
-            'CATEGORY_NAME': item['CATEGORY_NAME'],
-            'quantity': item['QUANTITY']
-        } for item in order_items
-    ]
-    
+    # Reformat to match frontend expectation and convert PRICE_AT_PURCHASE to float
+    order['products'] = []
+    if order_items: # Check if order_items were fetched successfully
+        for item in order_items:
+            try:
+                price_float = float(item['PRICE_AT_PURCHASE'])
+            except (ValueError, TypeError):
+                print(f"Warning: Could not convert PRICE_AT_PURCHASE {item.get('PRICE_AT_PURCHASE')} to float for product ID {item.get('PRODUCTID')} in order ID {order_id}")
+                price_float = 0.0 # Default or handle as appropriate
+
+            order['products'].append({
+                'PRODUCTID': item['PRODUCTID'],
+                'NAME': item['NAME'],
+                'PRICE': price_float, # Send as float
+                'CATEGORY_NAME': item['CATEGORY_NAME'],
+                'quantity': item['QUANTITY']
+            })
+    # If order_items fetch failed, order['products'] will remain empty
+
     return jsonify({"success": True, "order": order})
 
 @app.route('/api/cart', methods=['POST'])

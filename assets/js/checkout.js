@@ -84,6 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
             card_number: document.getElementById("card-number").value, // Consider security implications - ideally use a payment gateway
             expiry: document.getElementById("expiry").value,
             cvv: document.getElementById("cvv").value, // Consider security implications
+            payment_type: document.querySelector('input[name="payment-type"]:checked').value // Get selected payment type
         };
 
         // Prepare the complete order data payload
@@ -104,8 +105,10 @@ document.addEventListener("DOMContentLoaded", function () {
         })
             .then(response => response.json()) // Always parse JSON, even for errors
             .then(data => { // Check response status and data.success
-                if (data.success) {
+                if (data.success && data.order_number) { // Check for success and order_number
                     alert("Order placed successfully! Redirecting to confirmation...");
+                    // Store the order number for the confirmation page
+                    localStorage.setItem('lastOrderNumber', data.order_number); 
                     // Clear local cart? Maybe backend handles this after order creation.
                     // localStorage.removeItem("cart"); // Reconsider if using server-side cart
                     window.location.href = "order_confirmation.html"; // Redirect on success
