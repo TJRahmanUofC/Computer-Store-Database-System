@@ -16,10 +16,58 @@
         "ADDRESS": "12th DoLittle St, Calgary, AB"
       },
       {
-        "SSN": 54529,
-        "NAME": "John Smith",
-        "PHONE": 213456789,
-        "ADDRESS": "2nd Roosevelt Lane, Vancouver, BC"
+        "SSN": 74159,
+        "NAME": "Michael Masters",
+        "PHONE": 987654321,
+        "ADDRESS": "3rd Elm Street, Calgary, AB"
+      },
+      {
+        "SSN": 12345,
+        "NAME": "Alice Johnson",
+        "PHONE": 1234567890,
+        "ADDRESS": "123 Elm Street, Springfield"
+      },
+      {
+        "SSN": 67890,
+        "NAME": "Bob Smith",
+        "PHONE": 9876543210,
+        "ADDRESS": "456 Oak Avenue, Metropolis"
+      },
+      {
+        "SSN": 25479,
+        "NAME": "Elliot Inquisitor",
+        "PHONE": 300120040,
+        "ADDRESS": "Kunafa Tower, Akihabara"
+      },
+      {
+        "SSN": 96415,
+        "NAME": "Farhan Dullahan",
+        "PHONE": 159753248,
+        "ADDRESS": "Loc Lac St, Port Tanzania, OW"
+      },
+      {
+        "SSN": 55555,
+        "NAME": "Customer Five",
+        "PHONE": 5555555555,
+        "ADDRESS": "555 Maple Street, Gotham"
+      },
+      {
+        "SSN": 66666,
+        "NAME": "Customer Six",
+        "PHONE": 6666666666,
+        "ADDRESS": "666 Pine Street, Star City"
+      },
+      {
+        "SSN": 77777,
+        "NAME": "Customer Seven",
+        "PHONE": 7777777777,
+        "ADDRESS": "777 Birch Street, Central City"
+      },
+      {
+        "SSN": 88888,
+        "NAME": "Customer Eight",
+        "PHONE": 8888888888,
+        "ADDRESS": "888 Cedar Street, Coast City"
       }
     ],
     "CUSTOMER": [
@@ -30,6 +78,38 @@
       {
         "EMAIL": "m.masters@gmail.com",
         "SSN": 74159
+      },
+      {
+        "EMAIL": "master_inquisitor@ucalgary.ca",
+        "SSN": 25479
+      },
+      {
+        "EMAIL": "drdullahan@ucalgary.ca",
+        "SSN": 96415
+      },
+      {
+        "EMAIL": "alice.johnson@example.com",
+        "SSN": 12345
+      },
+      {
+        "EMAIL": "bob.smith@example.com",
+        "SSN": 67890
+      },
+      {
+        "EMAIL": "customer5@example.com",
+        "SSN": 55555
+      },
+      {
+        "EMAIL": "customer6@example.com",
+        "SSN": 66666
+      },
+      {
+        "EMAIL": "customer7@example.com",
+        "SSN": 77777
+      },
+      {
+        "EMAIL": "customer8@example.com",
+        "SSN": 88888
       }
     ],
     "EMPLOYEE": [
@@ -41,25 +121,114 @@
         "STOREID": 149
       },
       {
+        "NAME": "John Smith",
         "EMPLOYEE_ID": 148,
         "SSN": 96415,
         "ROLE": "Customer Service",
         "STOREID": 100
+      },
+      {
+        "NAME": "Emily Davis",
+        "EMPLOYEE_ID": 500,
+        "SSN": 87456,
+        "ROLE": "Sales Representative",
+        "STOREID": 255
+      },
+      {
+        "NAME": "Michael Brown",
+        "EMPLOYEE_ID": 101,
+        "SSN": 12345,
+        "ROLE": "Technician",
+        "STOREID": 255
+      },
+      {
+        "NAME": "Sarah Wilson",
+        "EMPLOYEE_ID": 102,
+        "SSN": 67890,
+        "ROLE": "Customer Service",
+        "STOREID": 149
+      },
+      {
+        "NAME": "David Johnson",
+        "EMPLOYEE_ID": 103,
+        "SSN": 11223,
+        "ROLE": "Inventory Manager",
+        "STOREID": 100
+      },
+      {
+        "NAME": "Laura Martinez",
+        "EMPLOYEE_ID": 104,
+        "SSN": 44556,
+        "ROLE": "Sales Representative",
+        "STOREID": 255
+      },
+      {
+        "NAME": "James Anderson",
+        "EMPLOYEE_ID": 105,
+        "SSN": 77889,
+        "ROLE": "Technician",
+        "STOREID": 149
+      },
+      {
+        "NAME": "Sophia Thomas",
+        "EMPLOYEE_ID": 106,
+        "SSN": 99001,
+        "ROLE": "Customer Service",
+        "STOREID": 100
+      },
+      {
+        "NAME": "Daniel Garcia",
+        "EMPLOYEE_ID": 107,
+        "SSN": 22334,
+        "ROLE": "Manager",
+        "STOREID": 255
+      },
+      {
+        "NAME": "Olivia Martinez",
+        "EMPLOYEE_ID": 108,
+        "SSN": 55667,
+        "ROLE": "Sales Representative",
+        "STOREID": 149
+      },
+      {
+        "NAME": "William Lee",
+        "EMPLOYEE_ID": 109,
+        "SSN": 88990,
+        "ROLE": "Technician",
+        "STOREID": 100
       }
     ],
     "ORDERS": [
-      {
-        "ORDER_ID": 100,
-        "ORDER_DATE": "2012-01-01",
-        "EMAIL": "jane.doe@hotmail.com",
-        "EMPLOYEE_ID": 148
-      },
-      {
-        "ORDER_ID": 956,
-        "ORDER_DATE": "2021-08-24",
-        "EMAIL": "m.masters@gmail.com",
-        "EMPLOYEE_ID": 500
-      }
+        {
+            "ORDER_ID": 100,
+            "ORDER_DATE": "2012-01-01",
+            "EMAIL": "jane.doe@hotmail.com",
+            "EMPLOYEE_ID": 148
+        },
+        {
+            "ORDER_ID": 785,
+            "ORDER_DATE": "2024-12-28",
+            "EMAIL": "master_inquisitor@ucalgary.ca",
+            "EMPLOYEE_ID": 500
+        },
+        {
+            "ORDER_ID": 956,
+            "ORDER_DATE": "2021-08-24",
+            "EMAIL": "m.masters@gmail.com",
+            "EMPLOYEE_ID": 500
+        },
+        {
+            "ORDER_ID": 5699,
+            "ORDER_DATE": "2018-07-13",
+            "EMAIL": "drdullahan@ucalgary.ca",
+            "EMPLOYEE_ID": 148
+        },
+        {
+            "ORDER_ID": 7415,
+            "ORDER_DATE": "2019-06-19",
+            "EMAIL": "m.masters@gmail.com",
+            "EMPLOYEE_ID": 500
+        }
     ],
     "CATEGORY": [
       {
@@ -141,6 +310,216 @@
         "SUPPLIER_ID": 741,
         "DELIVERY_NO": 2,
         "NO_OF_PRODUCTS": 1
+      },
+      {
+        "PRODUCTID": 51,
+        "NAME": "Intel Core i9",
+        "PRICE": 1200,
+        "CATEGORY_NAME": "Processor",
+        "STOREID": 255,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24,
+        "NO_OF_PRODUCTS": 15
+      },
+      {
+        "PRODUCTID": 52,
+        "NAME": "AMD Ryzen 9",
+        "PRICE": 1100,
+        "CATEGORY_NAME": "Processor",
+        "STOREID": 255,
+        "SUPPLIER_ID": 741,
+        "DELIVERY_NO": 2,
+        "NO_OF_PRODUCTS": 10
+      },
+      {
+        "PRODUCTID": 53,
+        "NAME": "NVIDIA RTX 4090",
+        "PRICE": 2500,
+        "CATEGORY_NAME": "Graphics Card",
+        "STOREID": 50,
+        "SUPPLIER_ID": 741,
+        "DELIVERY_NO": 2,
+        "NO_OF_PRODUCTS": 5
+      },
+      {
+        "PRODUCTID": 54,
+        "NAME": "ASUS ROG Motherboard",
+        "PRICE": 350,
+        "CATEGORY_NAME": "Motherboard",
+        "STOREID": 100,
+        "SUPPLIER_ID": 7,
+        "DELIVERY_NO": 4,
+        "NO_OF_PRODUCTS": 20
+      },
+      {
+        "PRODUCTID": 55,
+        "NAME": "Corsair Vengeance RAM 32GB",
+        "PRICE": 200,
+        "CATEGORY_NAME": "Memory",
+        "STOREID": 255,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24,
+        "NO_OF_PRODUCTS": 30
+      },
+      {
+        "PRODUCTID": 56,
+        "NAME": "Samsung 980 Pro SSD 1TB",
+        "PRICE": 150,
+        "CATEGORY_NAME": "Storage",
+        "STOREID": 255,
+        "SUPPLIER_ID": 7,
+        "DELIVERY_NO": 4,
+        "NO_OF_PRODUCTS": 25
+      },
+      {
+        "PRODUCTID": 57,
+        "NAME": "EVGA 850W Power Supply",
+        "PRICE": 130,
+        "CATEGORY_NAME": "Power Supply",
+        "STOREID": 100,
+        "SUPPLIER_ID": 7,
+        "DELIVERY_NO": 4,
+        "NO_OF_PRODUCTS": 12
+      },
+      {
+        "PRODUCTID": 58,
+        "NAME": "Dell XPS 15 Laptop",
+        "PRICE": 1800,
+        "CATEGORY_NAME": "Laptop",
+        "STOREID": 1486,
+        "SUPPLIER_ID": 7,
+        "DELIVERY_NO": 4,
+        "NO_OF_PRODUCTS": 8
+      },
+      {
+        "PRODUCTID": 59,
+        "NAME": "Nintendo Switch OLED",
+        "PRICE": 350,
+        "CATEGORY_NAME": "Nintendo Gaming Console",
+        "STOREID": 149,
+        "SUPPLIER_ID": 52,
+        "DELIVERY_NO": 52,
+        "NO_OF_PRODUCTS": 50
+      },
+      {
+        "PRODUCTID": 60,
+        "NAME": "Logitech MX Master 3 Mouse",
+        "PRICE": 100,
+        "CATEGORY_NAME": "Accessories",
+        "STOREID": 255,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24,
+        "NO_OF_PRODUCTS": 40
+      },
+      {
+        "PRODUCTID": 61,
+        "NAME": "HyperX Cloud II Headset",
+        "PRICE": 120,
+        "CATEGORY_NAME": "Audio Accessories",
+        "STOREID": 255,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24,
+        "NO_OF_PRODUCTS": 25
+      },
+      {
+        "PRODUCTID": 62,
+        "NAME": "Razer BlackWidow Keyboard",
+        "PRICE": 150,
+        "CATEGORY_NAME": "Accessories",
+        "STOREID": 255,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24,
+        "NO_OF_PRODUCTS": 20
+      },
+      {
+        "PRODUCTID": 63,
+        "NAME": "LG UltraGear Monitor",
+        "PRICE": 400,
+        "CATEGORY_NAME": "Monitors",
+        "STOREID": 100,
+        "SUPPLIER_ID": 7,
+        "DELIVERY_NO": 4,
+        "NO_OF_PRODUCTS": 10
+      },
+      {
+        "PRODUCTID": 64,
+        "NAME": "SteelSeries Arctis 7",
+        "PRICE": 180,
+        "CATEGORY_NAME": "Audio Accessories",
+        "STOREID": 255,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24,
+        "NO_OF_PRODUCTS": 15
+      },
+      {
+        "PRODUCTID": 65,
+        "NAME": "Seagate Barracuda 2TB HDD",
+        "PRICE": 80,
+        "CATEGORY_NAME": "Storage",
+        "STOREID": 255,
+        "SUPPLIER_ID": 7,
+        "DELIVERY_NO": 4,
+        "NO_OF_PRODUCTS": 50
+      },
+      {
+        "PRODUCTID": 66,
+        "NAME": "Intel Core i5-12600K",
+        "PRICE": 300,
+        "CATEGORY_NAME": "Processor",
+        "STOREID": 255,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24,
+        "NO_OF_PRODUCTS": 20
+      },
+      {
+        "PRODUCTID": 67,
+        "NAME": "Intel Core i7-12700K",
+        "PRICE": 400,
+        "CATEGORY_NAME": "Processor",
+        "STOREID": 255,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24,
+        "NO_OF_PRODUCTS": 15
+      },
+      {
+        "PRODUCTID": 68,
+        "NAME": "Intel Core i9-12900K",
+        "PRICE": 600,
+        "CATEGORY_NAME": "Processor",
+        "STOREID": 255,
+        "SUPPLIER_ID": 15,
+        "DELIVERY_NO": 24,
+        "NO_OF_PRODUCTS": 10
+      },
+      {
+        "PRODUCTID": 69,
+        "NAME": "AMD Ryzen 5 5600X",
+        "PRICE": 250,
+        "CATEGORY_NAME": "Processor",
+        "STOREID": 255,
+        "SUPPLIER_ID": 741,
+        "DELIVERY_NO": 2,
+        "NO_OF_PRODUCTS": 25
+      },
+      {
+        "PRODUCTID": 70,
+        "NAME": "AMD Ryzen 7 5800X",
+        "PRICE": 350,
+        "CATEGORY_NAME": "Processor",
+        "STOREID": 255,
+        "SUPPLIER_ID": 741,
+        "DELIVERY_NO": 2,
+        "NO_OF_PRODUCTS": 20
+      },
+      {
+        "PRODUCTID": 71,
+        "NAME": "AMD Ryzen 9 5900X",
+        "PRICE": 450,
+        "CATEGORY_NAME": "Processor",
+        "STOREID": 255,
+        "SUPPLIER_ID": 741,
+        "DELIVERY_NO": 2,
+        "NO_OF_PRODUCTS": 15
       }
     ],
     "INVENTORY": [
