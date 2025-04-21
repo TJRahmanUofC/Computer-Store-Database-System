@@ -186,6 +186,26 @@ def get_user():
         return jsonify({"success": True, "user": session['user']})
     return jsonify({"success": False, "message": "Not logged in"}), 401
 
+@app.route('/api/user/change-password', methods=['POST'])
+def user_change_password():
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Login required"}), 401
+
+    data = request.json
+    current_pw = data.get('current_password')
+    new_pw = data.get('new_password')
+    email = session['user']['email']
+
+    user = execute_query("SELECT PASSWORD_HASH FROM CUSTOMER WHERE EMAIL = %s", [email])
+    if not user or user['PASSWORD_HASH'] != hashlib.sha256(current_pw.encode('utf-8')).hexdigest():
+        return jsonify({"success": False, "message": "Current password incorrect"}), 403
+
+    new_hash = hashlib.sha256(new_pw.encode('utf-8')).hexdigest()
+    execute_query("UPDATE CUSTOMER SET PASSWORD_HASH = %s WHERE EMAIL = %s", [new_hash, email], commit=True)
+    
+    return jsonify({"success": True, "message": "Password changed successfully"})
+
+
 # Product Routes
 
 @app.route('/api/products', methods=['GET'])
@@ -771,19 +791,14 @@ def admin_update_product(product_id):
     return jsonify({"success": True, "message": "Product updated successfully"})
 
 @app.route('/api/admin/orders', methods=['GET'])
-def admin_orders():
+def admin_get_orders():
     if 'admin' not in session:
         return jsonify({"success": False, "message": "Admin login required"}), 401
-    
+
     orders = execute_query("""
-        SELECT o.ORDER_ID, o.ORDER_DATE, o.STATUS, c.EMAIL, p.AMOUNT,
-               CONCAT(ps.NAME, ' (', ps.ADDRESS, ')') as CUSTOMER_INFO
-        FROM ORDERS o
-        JOIN MAKES_PAYMENT mp ON o.ORDER_ID = mp.ORDER_ID
-        JOIN PAYMENT p ON mp.PAYMENT_NO = p.PAYMENT_NO
-        JOIN CUSTOMER c ON o.EMAIL = c.EMAIL
-        JOIN PERSON ps ON c.SSN = ps.SSN
-        ORDER BY o.ORDER_DATE DESC
+        SELECT ORDER_ID, ORDER_DATE, ORDER_NUMBER, EMAIL, STATUS 
+        FROM ORDERS
+        ORDER BY ORDER_DATE DESC
     """, fetch_all=True)
     
     return jsonify({"success": True, "orders": orders})
@@ -792,18 +807,18 @@ def admin_orders():
 def admin_update_order(order_id):
     if 'admin' not in session:
         return jsonify({"success": False, "message": "Admin login required"}), 401
-        
+
     data = request.json
     status = data.get('status')
-    employee_id = session['admin']['employee_id']
-    
-    execute_query(
-        "UPDATE ORDERS SET STATUS = %s, EMPLOYEE_ID = %s WHERE ORDER_ID = %s",
-        [status, employee_id, order_id],
-        commit=True
-    )
-    
-    return jsonify({"success": True, "message": "Order status updated"})
+
+    # Assign the current employee to the order & update its status
+    execute_query("""
+        UPDATE ORDERS 
+        SET STATUS = %s, EMPLOYEE_ID = %s 
+        WHERE ORDER_ID = %s
+    """, [status, session['admin']['employee_id'], order_id], commit=True)
+
+    return jsonify({"success": True, "message": "Order updated"})
 
 @app.route('/api/admin/suppliers', methods=['GET'])
 def admin_suppliers():
@@ -964,6 +979,30 @@ def admin_remove_employee(employee_id):
         return jsonify({"success": True, "message": "Employee deleted successfully"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/admin/change-password', methods=['POST'])
+def admin_change_password():
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Login required"}), 401
+
+    data = request.json
+    current_pw = data.get('current_password')
+    new_pw = data.get('new_password')
+
+    employee_id = session['admin']['employee_id']
+    
+    # Get current hash
+    employee = execute_query("SELECT PASSWORD_HASH FROM EMPLOYEE WHERE EMPLOYEE_ID = %s", [employee_id])
+
+    current_hash = hashlib.sha256(current_pw.encode('utf-8')).hexdigest()
+    if not employee or employee['PASSWORD_HASH'] != current_hash:
+        return jsonify({"success": False, "message": "Current password is incorrect"}), 403
+
+    new_hash = hashlib.sha256(new_pw.encode('utf-8')).hexdigest()
+    execute_query("UPDATE EMPLOYEE SET PASSWORD_HASH = %s WHERE EMPLOYEE_ID = %s", [new_hash, employee_id], commit=True)
+
+    return jsonify({"success": True, "message": "Password updated successfully"})
+
 
 
 @app.route('/api/health', methods=['GET'])
