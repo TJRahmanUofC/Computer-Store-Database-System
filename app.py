@@ -702,6 +702,7 @@ def admin_dashboard():
     
     return jsonify({
         "success": True,
+        "admin": session['admin'],
         "recent_orders": recent_orders,
         "inventory": inventory,
         "recent_deliveries": deliveries
@@ -899,6 +900,71 @@ def admin_update_delivery(delivery_no):
             )
     
     return jsonify({"success": True, "message": "Delivery status updated"})
+
+@app.route('/api/admin/employees', methods=['GET'])
+def admin_get_employees():
+    if 'admin' not in session or session['admin']['role'].lower() != 'manager':
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+
+    try:
+        employees = execute_query("""
+            SELECT e.EMPLOYEE_ID, e.ROLE, e.STOREID, p.SSN, p.NAME, p.PHONE, p.ADDRESS
+            FROM EMPLOYEE e
+            JOIN PERSON p ON e.SSN = p.SSN
+        """, fetch_all=True)
+
+        return jsonify(employees)
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/admin/employees', methods=['POST'])
+def admin_add_employee():
+    if 'admin' not in session or session['admin']['role'].lower() != 'manager':
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+
+    data = request.json
+    ssn = data.get('SSN')
+    name = data.get('NAME')
+    phone = data.get('PHONE')
+    address = data.get('ADDRESS')
+    role = data.get('ROLE')
+    employee_id = data.get('EMPLOYEE_ID')
+    store_id = data.get('STOREID')
+
+    # Default password
+    default_password = "password"
+    password_hash = hashlib.sha256(default_password.encode('utf-8')).hexdigest()
+
+    try:
+        # Step 1: Add to PERSON
+        execute_query(
+            "INSERT INTO PERSON (SSN, NAME, PHONE, ADDRESS) VALUES (%s, %s, %s, %s)",
+            [ssn, name, phone, address],
+            commit=True
+        )
+
+        # Step 2: Add to EMPLOYEE
+        execute_query(
+            "INSERT INTO EMPLOYEE (EMPLOYEE_ID, SSN, ROLE, STOREID, PASSWORD_HASH) VALUES (%s, %s, %s, %s, %s)",
+            [employee_id, ssn, role, store_id, password_hash],
+            commit=True
+        )
+
+        return jsonify({"success": True, "message": "Employee added successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/admin/employees/<int:employee_id>', methods=['DELETE'])
+def admin_remove_employee(employee_id):
+    if 'admin' not in session or session['admin']['role'].lower() != 'manager':
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+
+    try:
+        execute_query("DELETE FROM EMPLOYEE WHERE EMPLOYEE_ID = %s", [employee_id], commit=True)
+        return jsonify({"success": True, "message": "Employee deleted successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
 
 @app.route('/api/health', methods=['GET'])
 def health_check():

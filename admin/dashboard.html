@@ -12,6 +12,7 @@
         <h1>Admin Dashboard</h1>
         <nav>
             <a href="../index.html">Home</a>
+            <a href="#" id="logout-button">Logout</a>
         </nav>
     </header>
 
@@ -29,5 +30,27 @@
     <footer>
         <p>&copy; 2025 Byte Hub. All rights reserved.</p>
     </footer>
+
+    <script>
+        document.getElementById("logout-button").addEventListener("click", function () {
+            fetch('http://127.0.0.1:5000/api/admin/logout', {
+                method: 'POST',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("You have been logged out.");
+                    window.location.href = "../admin/admin_login.html"; // Redirect to admin login page
+                } else {
+                    alert("Logout failed. Please try again.");
+                }
+            })
+            .catch(error => {
+                console.error("Error during logout:", error);
+                alert("An error occurred. Please try again later.");
+            });
+        });
+    </script>
 </body>
 </html>
