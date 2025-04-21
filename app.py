@@ -541,12 +541,20 @@ def add_to_cart():
 
 @app.route('/api/cart/count', methods=['GET'])
 def get_cart_count():
+    # Check if the user is logged in
     if 'user' not in session:
-        return jsonify({"success": False, "message": "Please log in to view cart"}), 401
-
-    cart = session.get('cart', [])
-    count = sum(item['quantity'] for item in cart)
-    return jsonify({"success": True, "count": count})
+        # User is not logged in, return count as 0
+        return jsonify({'success': True, 'count': 0})
+    
+    try:
+        # Fetch the cart from the session
+        cart = session.get('cart', [])
+        # Calculate the total count of items in the cart
+        cart_count = sum(item['quantity'] for item in cart)
+        return jsonify({'success': True, 'count': cart_count})
+    except Exception as e:
+        # Handle any unexpected errors
+        return jsonify({'success': False, 'message': f"An error occurred: {str(e)}"}), 500
 
 @app.route('/api/cart', methods=['GET'])
 def get_cart():
