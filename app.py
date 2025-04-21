@@ -796,12 +796,34 @@ def admin_get_orders():
         return jsonify({"success": False, "message": "Admin login required"}), 401
 
     orders = execute_query("""
-        SELECT ORDER_ID, ORDER_DATE, ORDER_NUMBER, EMAIL, STATUS 
+        SELECT ORDER_ID, ORDER_DATE, ORDER_NUMBER, EMAIL, STATUS
         FROM ORDERS
         ORDER BY ORDER_DATE DESC
     """, fetch_all=True)
-    
+
+    for order in orders:
+        order_id = order['ORDER_ID']
+
+        # Calculate amount dynamically
+        total = execute_query("""
+            SELECT SUM(p.PRICE * oi.QUANTITY) AS total
+            FROM ORDER_ITEMS oi
+            JOIN PRODUCT p ON oi.PRODUCTID = p.PRODUCTID
+            WHERE oi.ORDER_ID = %s
+        """, [order_id])
+        order['AMOUNT'] = total['total'] if total and total['total'] else 0
+
+        # Attach product list
+        products = execute_query("""
+            SELECT oi.PRODUCTID, p.NAME, p.PRICE, oi.QUANTITY
+            FROM ORDER_ITEMS oi
+            JOIN PRODUCT p ON oi.PRODUCTID = p.PRODUCTID
+            WHERE oi.ORDER_ID = %s
+        """, [order_id], fetch_all=True)
+        order['products'] = products
+
     return jsonify({"success": True, "orders": orders})
+
 
 @app.route('/api/admin/orders/<int:order_id>', methods=['PUT'])
 def admin_update_order(order_id):
