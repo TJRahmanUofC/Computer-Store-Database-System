@@ -79,12 +79,16 @@
                 <h3>Payment Information</h3>
                 <form id="payment-form">
                     <div class="form-group">
-                        <label>Payment Type</label>
+                        <label for="payment-type">Payment Type</label>
                         <div class="radio-group">
-                            <input type="radio" id="payment-credit" name="payment-type" value="Credit Card" checked>
-                            <label for="payment-credit">Credit Card</label>
-                            <input type="radio" id="payment-debit" name="payment-type" value="Debit Card">
-                            <label for="payment-debit">Debit Card</label>
+                            <div class="radio-option">
+                                <input type="radio" id="payment-credit" name="payment-type" value="Credit Card" checked>
+                                <label for="payment-credit">Credit Card</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="payment-debit" name="payment-type" value="Debit Card">
+                                <label for="payment-debit">Debit Card</label>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -151,3 +155,4 @@
     <script src="../assets/js/checkout.js"></script>
 </body>
 </html>
+``` 
