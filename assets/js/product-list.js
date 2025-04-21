@@ -14,8 +14,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 function renderProducts(products) {
                     productList.innerHTML = ""; // Clear existing content
                     products.forEach(product => {
-                        const imageName = product.NAME.toLowerCase().replace(/ /g, "_") + ".jpg";
-                        const imagePath = `../assets/images/${imageName}`;
+                        // Construct absolute path from server root based on Flask static config
+                        // Check if IMAGE_URL already includes 'assets/'
+                        let imageUrl = product.IMAGE_URL || 'images/default.jpg';
+                        const imagePath = imageUrl.startsWith('assets/') ? `/${imageUrl}` : `/assets/${imageUrl}`;
+
 
                         productList.innerHTML += `
                             <div class="product-card">

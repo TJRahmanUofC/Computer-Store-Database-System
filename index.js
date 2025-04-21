@@ -13,9 +13,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 newArrivalsContainer.innerHTML = ""; // Clear existing content
 
                 products.forEach(product => {
-                    // Construct image path safely (Ensure no spaces/issues)
-                    let imageName = product.NAME.toLowerCase().replace(/ /g, "_") + ".jpg";
-                    let imagePath = `assets/images/${imageName}`;
+                    // Use IMAGE_URL from API and construct correct absolute path
+                    let imageUrl = product.IMAGE_URL || 'images/default.jpg'; // Use default if IMAGE_URL is missing
+                    const imagePath = imageUrl.startsWith('assets/') ? `/${imageUrl}` : `/assets/${imageUrl}`;
 
                     newArrivalsContainer.innerHTML += `
                         <div class="product-card">
