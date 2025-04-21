@@ -120,17 +120,29 @@ function removeItemFromCart(productId) {
 
 // Function to update cart count in header (fetches from backend)
 function updateCartCount() {
-    fetch('http://127.0.0.1:5000/api/cart/count', { method: 'GET', credentials: 'include' })
-        .then(response => response.json())
+    fetch('http://127.0.0.1:5000/api/cart/count', {
+        method: 'GET',
+        credentials: 'include' // Include session cookies
+    })
+        .then(response => {
+            if (response.status === 401) {
+                // User is not logged in
+                let cartCountElement = document.getElementById("cart-count");
+                if (cartCountElement) {
+                    cartCountElement.textContent = `Cart (0)`;
+                }
+                return Promise.reject("Unauthorized: User not logged in");
+            }
+            return response.json();
+        })
         .then(data => {
             let cartCountElement = document.getElementById("cart-count");
             if (cartCountElement) {
-                if (data.success) {
+                if (data.success && typeof data.count === 'number') {
                     cartCountElement.textContent = `Cart (${data.count})`;
                 } else {
-                    // Handle case where user might not be logged in or other error
-                    cartCountElement.textContent = `Cart (0)`; 
-                    console.error("Failed to get cart count:", data.message);
+                    cartCountElement.textContent = `Cart (0)`;
+                    console.error("Failed to get cart count:", data.message || "Invalid response");
                 }
             }
         })
@@ -138,7 +150,7 @@ function updateCartCount() {
             console.error("Error fetching cart count:", error);
             let cartCountElement = document.getElementById("cart-count");
             if (cartCountElement) {
-                cartCountElement.textContent = `Cart (?)`; // Indicate error
+                cartCountElement.textContent = `Cart (0)`; // Default to 0 on error
             }
         });
 }
