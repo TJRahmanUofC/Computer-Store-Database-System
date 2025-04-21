@@ -272,7 +272,7 @@ footer {
     }
 }
 
-    /* Product Listing Section */
+/* Product Listing Section */
 .product-list {
     background-color: #ecf0f1;
     padding: 2rem;
@@ -1484,6 +1484,29 @@ h2 {
 #status-message {
     font-size: 1rem;
     margin-top: 0.5rem;
+}
+
+/* Radio Group Section */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.radio-option input[type="radio"] {
+    accent-color: #3498db; /* Matches the site's primary color */
+}
+
+.radio-option label {
+    font-size: 1rem;
+    color: #333;
+    cursor: pointer;
 }
 
 
