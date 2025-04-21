@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>My Profile</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="../assets/images/logo.png" alt="Site Logo" class="logo-image" width="100" height="50"/>
+            <span class="site-name">Byte Hub</span>
+        </div>
+        <nav>
+            <a href="../index.html">Home</a>
+            <a href="product-listing.html">Products</a>
+            <a href="order_history.html">Order</a>
+            <a href="login.html">Login</a>
+            <a href="profile.html">Profile</a>
+        </nav>
+    </header>
+
+    <main class="profile-section">
+        <div class="profile-info">
+            <p><strong>Name:</strong> <span id="user-name"></span></p>
+            <p><strong>Email:</strong> <span id="user-email"></span></p>
+            <p><strong>Phone:</strong> <span id="user-phone"></span></p>
+            <p><strong>Address:</strong> <span id="user-address"></span></p>
+        </div>
+
+        <hr/>
+
+        <h3>Change Password</h3>
+        <button id="toggle-password-form" type="button">Change Password</button>
+        <form id="change-password-form" style="display: none;">
+            <label for="current-password">Current Password:</label>
+            <input type="password" id="current-password" required />
+
+            <label for="new-password">New Password:</label>
+            <input type="password" id="new-password" required />
+
+            <button type="submit">Change Password</button>
+        </form>
+
+        <p id="status-message" style="margin-top: 10px; text-align:center;"></p>
+    </main>
+
+    <script src="../assets/js/profile.js"></script>
+</body>
+<footer>
+    <div class="footer-content">
+        <div class="payment-methods">
+            <p>We Accept:</p>
+            <div>
+                <img src="../assets/images/Visa.png" alt="Visa" class="payment-logo"/>
+                <img src="../assets/images/Mastercard.png" alt="MasterCard" class="payment-logo"/>
+                <img src="../assets/images/American_Express.png" alt="American Express" class="payment-logo"/>
+            </div>
+        </div>
+        <div class="footer-links">
+            <a href="#">Contact Information</a>
+            <div>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms & Conditions</a>
+            </div>
+        </div>
+        <div class="newsletter">
+            <p>Stay In Touch! Join our Newsletter.</p>
+            <div>
+                <input placeholder="Enter Email" type="email"/>
+                <button>Subscribe</button>
+            </div>
+        </div>
+        <!-- Admin Section -->
+        <div class="admin-section">
+            <a href="admin/admin_login.html" class="admin-link">Admin Login</a>
+        </div>
+    </div>
+</footer>
+</html>
