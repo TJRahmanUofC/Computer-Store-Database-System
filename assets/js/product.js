@@ -23,7 +23,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 const product = data.product;
 
                 // Update product details
-                document.getElementById("product-image").src = `../assets/${product.NAME.toLowerCase().replace(/ /g, "_")}.jpg`;
+                // Construct absolute path from server root based on Flask static config
+                // Check if IMAGE_URL already includes 'assets/'
+                let mainImageUrl = product.IMAGE_URL || 'images/default.jpg';
+                const mainImagePath = mainImageUrl.startsWith('assets/') ? `/${mainImageUrl}` : `/assets/${mainImageUrl}`;
+                document.getElementById("product-image").src = mainImagePath;
                 document.getElementById("product-name").textContent = product.NAME;
                 document.getElementById("product-category").textContent = `Category: ${product.CATEGORY_NAME}`;
                 document.getElementById("product-price").textContent = `$${product.PRICE}`;
@@ -50,9 +54,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 const relatedProductsGrid = document.getElementById("related-products-grid");
 
                 relatedProducts.forEach(relatedProduct => {
+                    // Construct absolute path for related product images
+                    let relatedImageUrl = relatedProduct.IMAGE_URL || 'images/default.jpg';
+                    const relatedImagePath = relatedImageUrl.startsWith('assets/') ? `/${relatedImageUrl}` : `/assets/${relatedImageUrl}`;
                     relatedProductsGrid.innerHTML += `
                         <div class="product-card">
-                            <img src="../assets/${relatedProduct.NAME.toLowerCase().replace(/ /g, "_")}.jpg" alt="${relatedProduct.NAME}">
+                            <img src="${relatedImagePath}" alt="${relatedProduct.NAME}">
                             <h3>${relatedProduct.NAME}</h3>
                             <p>Category: ${relatedProduct.CATEGORY_NAME}</p>
                             <p class="price">$${relatedProduct.PRICE}</p>

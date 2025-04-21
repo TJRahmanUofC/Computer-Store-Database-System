@@ -212,7 +212,7 @@ def user_change_password():
 def get_products():
     limit = request.args.get('limit', type=int)
     query = """
-        SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS
+        SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS, p.IMAGE_URL
         FROM PRODUCT p
         ORDER BY p.PRODUCTID DESC
     """
@@ -227,7 +227,7 @@ def get_products():
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
     product = execute_query("""
-        SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS,
+        SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS, p.IMAGE_URL,
                s.LOCATION, s.NAME as STORE_NAME
         FROM PRODUCT p
         JOIN STORE s ON p.STOREID = s.STOREID
@@ -239,7 +239,7 @@ def get_product(product_id):
     
     # Get related products (same category)
     related_products = execute_query("""
-        SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS
+        SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS,  p.IMAGE_URL
         FROM PRODUCT p
         WHERE p.CATEGORY_NAME = %s AND p.PRODUCTID != %s
         LIMIT 4
