@@ -8,6 +8,7 @@ from dotenv import load_dotenv # Import load_dotenv
 from datetime import datetime
 import random
 import mysql.connector
+from mysql.connector import pooling # Import pooling for connection pooling
 from flask import send_from_directory # Import send_from_directory
 
 load_dotenv() # Load environment variables from .env file
@@ -33,38 +34,43 @@ if not app.config['MYSQL_PASSWORD']:
 app.secret_key = os.urandom(24)
 
 # Helper function to execute SQL queries
+dbconfig = {
+    "host": app.config['MYSQL_HOST'],
+    "user": app.config['MYSQL_USER'],
+    "password": app.config['MYSQL_PASSWORD'],
+    "database": app.config['MYSQL_DB']
+}
+
+cnxpool = pooling.MySQLConnectionPool(
+    pool_name="mypool",
+    pool_size=10,  # You can increase this based on expected concurrency
+    **dbconfig
+)
+
+# --- Helper function using connection pool ---
 def execute_query(query, params=None, fetch_all=False, commit=False):
+    connection = None
+    cursor = None
     try:
-        # Use configuration loaded from environment variables
-        connection = mysql.connector.connect(
-            host=app.config['MYSQL_HOST'],
-            user=app.config['MYSQL_USER'],
-            password=app.config['MYSQL_PASSWORD'],
-            database=app.config['MYSQL_DB']
-        )
+        connection = cnxpool.get_connection()
         cursor = connection.cursor(dictionary=True)
         cursor.execute(query, params or ())
-        
+
         if commit:
             connection.commit()
             return cursor.lastrowid
-        
-        if fetch_all:
-            result = cursor.fetchall()
-        else:
-            result = cursor.fetchone()
-        
-        cursor.close()
-        connection.close()
-        return result
+
+        return cursor.fetchall() if fetch_all else cursor.fetchone()
+
     except Exception as e:
         print(f"Database error: {e}")
-        # Ensure connection is closed even on error if it was opened
-        if 'connection' in locals() and connection.is_connected():
-            cursor.close()
-            connection.close()
         return None
 
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 # --- HTML Serving Routes ---
 
 # --- HTML Serving Routes ---

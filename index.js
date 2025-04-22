@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
     updateCartCount();
 
     // Fetch new arrivals from the backend
-    fetch('http://127.0.0.1:5000/api/products?limit=6', { method: 'GET', credentials: 'include' })
+    fetch('http://127.0.0.1:5000/api/products?limit=4', { method: 'GET', credentials: 'include' })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
