@@ -43,28 +43,4 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("Error fetching order history:", error);
             historyContainer.innerHTML = "<p>An error occurred while loading order history.</p>";
         });
-
-    // Call updateCartCount when the DOM is loaded
-    updateCartCount(); 
 });
-
-
-// Function to update cart count (moved outside DOMContentLoaded)
-function updateCartCount() {
-    // Fetch cart count from the backend
-    fetch('http://127.0.0.1:5000/api/cart/count', { method: 'GET', credentials: 'include' })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                let cartCountElement = document.getElementById("cart-count");
-                if (cartCountElement) {
-                    cartCountElement.textContent = `Cart (${data.count})`;
-                }
-            } else {
-                console.error("Failed to fetch cart count:", data.message);
-            }
-        })
-        .catch(error => {
-            console.error("Error fetching cart count:", error);
-        });
-}

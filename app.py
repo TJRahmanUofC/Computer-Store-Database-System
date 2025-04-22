@@ -567,57 +567,28 @@ def add_to_cart():
 
     data = request.json
     product_id = data.get('productId')
-    # Get quantity from request, default to 1 if not provided or invalid
-    try:
-        quantity_to_add = int(data.get('quantity', 1))
-        if quantity_to_add <= 0:
-            quantity_to_add = 1 # Ensure at least 1 is added
-    except (ValueError, TypeError):
-        quantity_to_add = 1
 
-    # Check if the product exists
-    product = execute_query("SELECT PRODUCTID, NAME, NO_OF_PRODUCTS FROM PRODUCT WHERE PRODUCTID = %s", [product_id])
-    if not product:
-        return jsonify({"success": False, "message": "Product not found"}), 404
+    # Check if the product exists and is in stock
+    product = execute_query("SELECT * FROM PRODUCT WHERE PRODUCTID = %s", [product_id])
+    if not product or product['NO_OF_PRODUCTS'] <= 0:
+        return jsonify({"success": False, "message": "Product not available"}), 400
 
     # Initialize cart in session if not already present
     if 'cart' not in session:
         session['cart'] = []
 
+    # Check if the product is already in the cart
     cart = session['cart']
-    current_cart_quantity = 0
-    item_found = False
-
-    # Check if the product is already in the cart and calculate current quantity
     for item in cart:
         if item['productId'] == product_id:
-            current_cart_quantity = item['quantity']
-            item_found = True
-            break
+            item['quantity'] += 1
+            session.modified = True
+            return jsonify({"success": True, "message": "Product quantity updated in cart"})
 
-    # Check stock availability (requested quantity + current cart quantity vs available stock)
-    total_quantity_needed = current_cart_quantity + quantity_to_add
-    if product['NO_OF_PRODUCTS'] < total_quantity_needed:
-        available_stock = product['NO_OF_PRODUCTS']
-        can_add = available_stock - current_cart_quantity
-        message = f"Insufficient stock for {product['NAME']}. Available: {available_stock}. You have {current_cart_quantity} in cart."
-        if can_add > 0:
-             message += f" You can add {can_add} more."
-        else:
-             message += " Cannot add more."
-        return jsonify({"success": False, "message": message}), 400
-
-    # Update quantity if item exists, otherwise add new item
-    if item_found:
-        for item in cart:
-            if item['productId'] == product_id:
-                item['quantity'] += quantity_to_add
-                break
-    else:
-        cart.append({"productId": product_id, "quantity": quantity_to_add})
-
+    # Add new product to the cart
+    cart.append({"productId": product_id, "quantity": 1})
     session.modified = True
-    return jsonify({"success": True, "message": f"{quantity_to_add} item(s) added/updated in cart"})
+    return jsonify({"success": True, "message": "Product added to cart"})
 
 @app.route('/api/cart/count', methods=['GET'])
 def get_cart_count():
