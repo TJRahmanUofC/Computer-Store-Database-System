@@ -615,9 +615,10 @@ BEGIN
 END//
 DELIMITER ;
 
--- Update root user authentication to mysql_native_password
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'qwerty';
-FLUSH PRIVILEGES;
+-- Note: User creation/password management should be handled securely outside this script.
+-- The following lines were removed:
+-- ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'qwerty';
+-- FLUSH PRIVILEGES;
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
