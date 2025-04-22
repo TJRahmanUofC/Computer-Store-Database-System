@@ -58,11 +58,11 @@ CREATE TABLE ORDERS(
     FOREIGN KEY (EMPLOYEE_ID) REFERENCES EMPLOYEE (EMPLOYEE_ID)
 );
 
-CREATE TABLE CATEGORY(
-	CATEGORY_ID INTEGER PRIMARY KEY,
-    CATEGORY_NAME VARCHAR(255),
-    GENERATION INTEGER
-);
+-- CREATE TABLE CATEGORY(
+-- 	CATEGORY_ID INTEGER PRIMARY KEY,
+--     CATEGORY_NAME VARCHAR(255),
+--     GENERATION INTEGER
+-- );
 
 CREATE TABLE SUPPLIER(
     SUPPLIER_ID INTEGER PRIMARY KEY,
@@ -81,14 +81,14 @@ CREATE TABLE PRODUCT(
     PRODUCTID INTEGER PRIMARY KEY,
     NAME VARCHAR(255),
     PRICE DECIMAL(10,2),
-    CATEGORY_ID INTEGER,
+    CATEGORY_NAME INTEGER,
     STOREID INTEGER NOT NULL,
     SUPPLIER_ID INTEGER NOT NULL,
     DELIVERY_NO INTEGER NOT NULL,
     NO_OF_PRODUCTS INTEGER,
     IMAGE_URL VARCHAR(255), -- Added IMAGE_URL column
     -- FOREIGN KEY (ORDER_ID_CONTAINS) REFERENCES ORDERS (ORDER_ID) ON DELETE CASCADE, -- Removed FK
-    FOREIGN KEY (CATEGORY_ID) REFERENCES CATEGORY (CATEGORY_ID),
+    -- FOREIGN KEY (CATEGORY_ID) REFERENCES CATEGORY (CATEGORY_ID),
     FOREIGN KEY (STOREID) REFERENCES STORE (STOREID),
     FOREIGN KEY (SUPPLIER_ID) REFERENCES SUPPLIER (SUPPLIER_ID),
     FOREIGN KEY (DELIVERY_NO) REFERENCES SUPPLIER_DELIVERY (DELIVERY_NO) ON DELETE CASCADE
@@ -293,34 +293,34 @@ UPDATE STORE SET MANAGER_ID = 1098 WHERE STOREID = 610;
 UPDATE STORE SET MANAGER_ID = 3784 WHERE STOREID = 342;
 
 -- CATEGORY
-INSERT INTO CATEGORY (CATEGORY_ID, CATEGORY_NAME, GENERATION) VALUES
-(1,'Processor', 13),
-(25,'Processor', 7),
-(2,'Motherboard', 5),
-(23,'Motherboard', 4),
-(3,'Graphics Card', 4),
-(4,'Graphics Card', 5),
-(5,'Laptop', 3),
-(27,'Laptop', 2),
-(6,'Desktop', 4),
-(7,'Tab', 2),
-(8,'Desktop', 5),
-(9,'RAM', 4),
-(10,'HDD', 2),
-(11,'SSD', 3),
-(12,'PSU', 4),
-(26,'PSU', 5),
-(13,'Fans', 10),
-(14,'Water Cooling System', 3),
-(15,'Mouse', 1),
-(24,'Mouse', 2),
-(16,'Keyboard', 15),
-(17,'Controller', 5),
-(18,'Gaming Console', 5),
-(19,'Microphone', 2),
-(20,'Monitor', 12),
-(21,'Earbuds', 5),
-(22,'Headphones', 5);
+-- INSERT INTO CATEGORY (CATEGORY_ID, CATEGORY_NAME, GENERATION) VALUES
+-- (1,'Processor', 13),
+-- (25,'Processor', 7),
+-- (2,'Motherboard', 5),
+-- (23,'Motherboard', 4),
+-- (3,'Graphics Card', 4),
+-- (4,'Graphics Card', 5),
+-- (5,'Laptop', 3),
+-- (27,'Laptop', 2),
+-- (6,'Desktop', 4),
+-- (7,'Tab', 2),
+-- (8,'Desktop', 5),
+-- (9,'RAM', 4),
+-- (10,'HDD', 2),
+-- (11,'SSD', 3),
+-- (12,'PSU', 4),
+-- (26,'PSU', 5),
+-- (13,'Fans', 10),
+-- (14,'Water Cooling System', 3),
+-- (15,'Mouse', 1),
+-- (24,'Mouse', 2),
+-- (16,'Keyboard', 15),
+-- (17,'Controller', 5),
+-- (18,'Gaming Console', 5),
+-- (19,'Microphone', 2),
+-- (20,'Monitor', 12),
+-- (21,'Earbuds', 5),
+-- (22,'Headphones', 5);
 
 -- SUPPLIER
 INSERT INTO SUPPLIER (SUPPLIER_ID, NAME) VALUES
@@ -382,33 +382,39 @@ INSERT INTO SUPPLIER_DELIVERY (DELIVERY_NO, SUPPLIER_ID, STATUS, DELIVERY_DATE) 
 -- VALUES (15, 'Arrived', '2023-03-15');
 
 -- PRODUCT (Removed ORDER_ID_CONTAINS)
-INSERT INTO PRODUCT (PRODUCTID, NAME, PRICE, CATEGORY_ID, STOREID, SUPPLIER_ID, DELIVERY_NO, NO_OF_PRODUCTS, IMAGE_URL) VALUES
-(1, 'Core i7-13700K', 399.99, 1, 255, 15, 2, 25, 'assets/static/p1.jpg'),
-(2, 'RTX 4090', 1599.99, 4, 100, 19, 5, 10, 'assets/static/p2.jpg'),
-(3, 'Dell XPS 15', 1499.99, 5, 50, 7, 4, 15, 'assets/static/p3.jpg'),
-(4, 'MSI MPG Z790 Edge', 259.99, 2, 101, 158, 305, 20, ''),
-(5, 'Sony WH-1000XM5', 349.99, 22, 102, 368, 409, 20, ''),
-(6, 'DeathAdder V2', 49.99, 15, 103, 156, 476, 8, ''),
-(7, 'RTX 4080', 1299.99, 4, 104, 489, 401, 8, ''),
-(8, 'Core i9-13900K', 599.99, 1, 105, 105, 314, 12, ''),
-(9, 'Gigabyte AORUS Elite AX', 199.99, 2, 106, 99, 360, 18, ''),
-(10, 'Cyberdyne Liquid Cooler', 119.99, 14, 107, 666, 351, 5, ''),
-(11, 'WayneTech Ultra Slim Monitor', 299.99, 20, 108, 963, 330, 12, ''),
-(12, 'AMD Ryzen 9 7900X', 479.99, 1, 109, 741, 2, 20, ''),
-(13, 'Zetatech Gaming Console X', 499.99, 18, 110, 302, 312, 5, ''),
-(14, 'Night Corps Quantum PSU', 139.99, 12, 111, 500, 129, 20, ''),
-(15, 'Umbrella Gaming Desktop', 89.99, 8, 112, 777, 277, 15, ''),
-(16, 'Nintendo Joy-Con Controller', 69.99, 17, 113, 505, 2, 10, ''),
-(17, 'Dell G15 Gaming Laptop', 899.99, 5, 114, 7, 117, 12, ''),
-(18, 'Arasaka Nano RAM 32GB', 179.99, 9, 115, 15, 103, 20, ''),
-(19, 'Baxter HDD 16TB', 11129.99, 10, 116, 252, 311, 15, ''),
-(20, 'Quantum QuantumDrive SSD 2TB', 1199.99, 11, 117, 444, 187, 17, ''),
-(21, 'Stark Arc Reactor PSU', 249.99, 12, 118, 251, 24, 10, ''),
-(22, 'Militech Combat Mouse', 39.99, 15, 119, 229, 228, 8, ''),
-(23, 'Moga Mini Notebook', 499.99, 7, 120, 12, 173, 2, ''),
-(24, 'RTX 5090', 2999.99, 4, 121, 2, 209, 5, ''),
-(25, 'MSI Gaming Keyboard', 2999.99, 16, 121, 2, 209, 5, ''),
-(26, 'Bismillah Tech Mic Pro', 59.99, 19, 122, 1, 144, 2, '');
+INSERT INTO PRODUCT (PRODUCTID, NAME, PRICE, CATEGORY_NAME, STOREID, SUPPLIER_ID, DELIVERY_NO, NO_OF_PRODUCTS, IMAGE_URL) VALUES
+(1, 'Core i7-13700K', 399.99, 'Processor', 255, 19, 198, 25, 'assets/static/p1.jpg'),
+(2, 'RTX 4090', 1599.99, 'Graphics Card', 100, 19, 5, 10, 'assets/static/p2.jpg'),
+(3, 'Dell XPS 15', 1499.99, 'Laptop', 50, 7, 4, 15, 'assets/static/p3.jpg'),
+(4, 'MSI MPG Z790 Edge', 259.99, 'Motherboard', 874, 158, 305, 20, ''),
+(5, 'Sony WH-1000XM5', 349.99, 'Headphones', 562, 368, 409, 20, ''),
+(6, 'DeathAdder V2', 49.99, 'Mouse', 419, 156, 476, 8, ''),
+(7, 'RTX 4080', 1299.99, 'Graphics Card', 683, 489, 401, 8, ''),
+(8, 'Core i9-13900K', 599.99, 'Processor', 102, 105, 314, 12, ''),
+(9, 'Gigabyte AORUS Elite AX', 199.99, 'Motherboard', 948, 99, 360, 18, ''),
+(10, 'Cyberdyne Liquid Cooler', 119.99, 'Water Cooling', 737, 666, 351, 5, ''),
+(11, 'WayneTech Ultra Slim Monitor', 299.99, 20, 358, 963, 330, 12, ''),
+(12, 'AMD Ryzen 9 7900X', 479.99, 'Processor', 295, 741, 212, 20, ''),
+(13, 'Zetatech Gaming Console X', 499.99, 'Gaming Console', 610, 302, 312, 5, ''),
+(14, 'Night Corps Quantum PSU', 139.99, 'PSU', 342, 500, 129, 20, ''),
+(15, 'Umbrella Gaming Desktop', 89.99, 'Desktop', 419, 777, 277, 15, ''),
+(16, 'Nintendo Joy-Con Controller', 69.99, 'Controller', 562, 741, 2, 10, ''),
+(17, 'Dell G15 Gaming Laptop', 899.99, 'Laptop', 912, 7, 117, 12, ''),
+(18, 'Arasaka Nano RAM 32GB', 179.99, 'RAM', 529, 15, 103, 20, ''),
+(19, 'Baxter HDD 16TB', 11129.99, 'HDD', 102, 252, 311, 15, ''),
+(20, 'Quantum QuantumDrive SSD 2TB', 1199.99, 'SSD', 829, 444, 187, 17, ''),
+(21, 'Stark Arc Reactor PSU', 249.99, 'PSU', 781, 251, 24, 10, ''),
+(22, 'Militech Combat Mouse', 39.99, 'Mouse', 220, 229, 228, 8, ''),
+(23, 'Moga Mini Notebook', 499.99, 'Tab', 355, 12, 173, 2, ''),
+(24, 'RTX 5090', 2999.99, 'Graphics Card', 677, 2, 209, 5, ''),
+(25, 'MSI Gaming Keyboard', 2999.99, 'Keyboard', 488, 2, 209, 5, ''),
+(26, 'Bismillah Tech Mic Pro', 59.99, 'Microphone', 100, 1, 144, 2, '');
+
+SELECT *
+FROM PRODUCT
+WHERE STOREID NOT IN
+(SELECT STOREID
+FROM STORE);
 
 -- INVENTORY
 INSERT INTO INVENTORY (INVENTORY_ID, STOCK_LEVEL) VALUES
