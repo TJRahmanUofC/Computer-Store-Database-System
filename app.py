@@ -83,7 +83,7 @@ def register():
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
-    phone = data.get('phone')
+    phone = data.get('phone') or None
     address = data.get('address')
     
     # Check if email already exists
@@ -649,6 +649,15 @@ def remove_cart_item(product_id):
     return jsonify({"success": True, "message": "Item removed from cart"})
 
 # Admin Routes
+@app.route('/api/admin/profile', methods=['GET'])
+def get_admin_profile():
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+
+    return jsonify({
+        "success": True,
+        "admin": session['admin']
+    })
 
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
@@ -962,7 +971,7 @@ def admin_add_employee():
     data = request.json
     ssn = data.get('SSN')
     name = data.get('NAME')
-    phone = data.get('PHONE')
+    phone = data.get('PHONE') or None
     address = data.get('ADDRESS')
     role = data.get('ROLE')
     employee_id = data.get('EMPLOYEE_ID')
