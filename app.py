@@ -4,10 +4,13 @@ from flask_cors import CORS
 # from werkzeug.security import generate_password_hash, check_password_hash # Replaced with hashlib
 import hashlib # Added for SHA-256
 import os
+from dotenv import load_dotenv # Import load_dotenv
 from datetime import datetime
 import random
 import mysql.connector
 from flask import send_from_directory # Import send_from_directory
+
+load_dotenv() # Load environment variables from .env file
 
 # Configure Flask App: static_url_path='/assets' means requests starting with /assets
 # will be served from the static_folder='assets' directory.
@@ -15,12 +18,16 @@ app = Flask(__name__, static_url_path='/assets', static_folder='assets')
 
 CORS(app, supports_credentials=True)
 
-# MySQL Configuration
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'qwerty'  # Change this
-app.config['MYSQL_DB'] = 'Computer_Hardware_Store'
+# MySQL Configuration - Load from environment variables
+app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST', 'localhost')
+app.config['MYSQL_USER'] = os.getenv('MYSQL_USER', 'root')
+app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
+app.config['MYSQL_DB'] = os.getenv('MYSQL_DB', 'Computer_Hardware_Store')
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+
+# Check if essential DB config is missing
+if not app.config['MYSQL_PASSWORD']:
+    raise ValueError("Missing required environment variable: MYSQL_PASSWORD")
 
 # Session configuration
 app.secret_key = os.urandom(24)
@@ -28,11 +35,12 @@ app.secret_key = os.urandom(24)
 # Helper function to execute SQL queries
 def execute_query(query, params=None, fetch_all=False, commit=False):
     try:
+        # Use configuration loaded from environment variables
         connection = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='qwerty',
-            database='Computer_Hardware_Store'
+            host=app.config['MYSQL_HOST'],
+            user=app.config['MYSQL_USER'],
+            password=app.config['MYSQL_PASSWORD'],
+            database=app.config['MYSQL_DB']
         )
         cursor = connection.cursor(dictionary=True)
         cursor.execute(query, params or ())
@@ -83,7 +91,7 @@ def register():
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
-    phone = data.get('phone')
+    phone = data.get('phone') or None
     address = data.get('address')
     
     # Check if email already exists
@@ -211,16 +219,27 @@ def user_change_password():
 @app.route('/api/products', methods=['GET'])
 def get_products():
     limit = request.args.get('limit', type=int)
+    category = request.args.get('category') # Get category from query params
+    
+    params = []
     query = """
         SELECT p.PRODUCTID, p.NAME, p.PRICE, p.CATEGORY_NAME, p.NO_OF_PRODUCTS, p.IMAGE_URL
         FROM PRODUCT p
-        ORDER BY p.PRODUCTID DESC
     """
+    
+    # Add WHERE clause if category is specified and not 'All'
+    if category and category.lower() != 'all':
+        query += " WHERE p.CATEGORY_NAME = %s"
+        params.append(category)
+        
+    query += " ORDER BY p.PRODUCTID DESC" # Always order
+    
+    # Add LIMIT clause if specified
     if limit:
         query += " LIMIT %s"
-        products = execute_query(query, [limit], fetch_all=True)
-    else:
-        products = execute_query(query, fetch_all=True)
+        params.append(limit)
+        
+    products = execute_query(query, params, fetch_all=True)
 
     return jsonify({"success": True, "products": products})
 
@@ -262,12 +281,18 @@ def admin_delete_product(product_id):
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+# Cart and Order Routes
+
 @app.route('/api/categories', methods=['GET'])
 def get_categories():
-    categories = execute_query("SELECT * FROM CATEGORY", fetch_all=True)
+    # Fetch distinct category names from the PRODUCT table
+    categories = execute_query("""
+        SELECT DISTINCT CATEGORY_NAME
+        FROM PRODUCT
+        ORDER BY CATEGORY_NAME
+    """, fetch_all=True)
+    # ... (error handling and response) ...
     return jsonify({"success": True, "categories": categories})
-
-# Cart and Order Routes
 
 @app.route('/api/orders', methods=['POST'])
 def create_order():
@@ -649,6 +674,15 @@ def remove_cart_item(product_id):
     return jsonify({"success": True, "message": "Item removed from cart"})
 
 # Admin Routes
+@app.route('/api/admin/profile', methods=['GET'])
+def get_admin_profile():
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Admin login required"}), 401
+
+    return jsonify({
+        "success": True,
+        "admin": session['admin']
+    })
 
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
@@ -962,7 +996,7 @@ def admin_add_employee():
     data = request.json
     ssn = data.get('SSN')
     name = data.get('NAME')
-    phone = data.get('PHONE')
+    phone = data.get('PHONE') or None
     address = data.get('ADDRESS')
     role = data.get('ROLE')
     employee_id = data.get('EMPLOYEE_ID')

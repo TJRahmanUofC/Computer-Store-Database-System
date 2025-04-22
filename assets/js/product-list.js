@@ -2,6 +2,22 @@ document.addEventListener("DOMContentLoaded", function () {
     // Load cart count from localStorage
     updateCartCount();
 
+    // Fetch categories first
+    fetch('http://127.0.0.1:5000/api/categories')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const categorySelect = document.getElementById("category-filter");
+                data.categories.forEach(category => {
+                    const option = document.createElement("option");
+                    option.value = category.CATEGORY_NAME.toLowerCase();
+                    option.textContent = category.CATEGORY_NAME;
+                    categorySelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error("Error loading categories:", error));
+
     // Fetch product data from the backend
     fetch('http://127.0.0.1:5000/api/products')
         .then(response => response.json())
@@ -47,6 +63,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // Initial render of all products
                 renderProducts(products);
+
+                // Add event listener for the Apply Filters button
+                document.getElementById("apply-filters").addEventListener("click", function () {
+                    const categoryFilter = document.getElementById("category-filter");
+                    const selectedCategory = categoryFilter.value.trim().toLowerCase();
+                    const searchKeyword = document.getElementById("search").value.trim().toLowerCase();
+
+                    const filteredProducts = products.filter(product => {
+                        const name = product.NAME.toLowerCase();
+                        const category = product.CATEGORY_NAME.toLowerCase();
+
+                        const matchesSearch = !searchKeyword || name.includes(searchKeyword);
+                        const matchesCategory = !selectedCategory || category === selectedCategory;
+
+                        return matchesSearch && matchesCategory;
+                    });
+
+                    renderProducts(filteredProducts);
+                });
+
+                // Add dynamic search functionality
+                document.getElementById("search").addEventListener("input", function () {
+                    document.getElementById("apply-filters").click();
+                });
             } else {
                 console.error("Failed to load products:", data.message);
             }
