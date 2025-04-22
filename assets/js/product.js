@@ -84,24 +84,17 @@ document.addEventListener("DOMContentLoaded", function () {
 function addToCart(productId) {
     fetch('http://127.0.0.1:5000/api/cart', {
         method: 'POST',
-        credentials: 'include', // Include cookies for session management
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ productId })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+        credentials: 'include'
     })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Failed to add product to cart");
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             if (data.success) {
-                updateCartCount();
                 alert("Product added to cart!");
+                updateCartCount(); // Update cart count in header
             } else {
-                alert("Failed to add product to cart: " + data.message);
+                alert(data.message || "Failed to add product to cart.");
             }
         })
         .catch(error => {
