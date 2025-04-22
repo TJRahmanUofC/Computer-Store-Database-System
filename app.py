@@ -262,12 +262,18 @@ def admin_delete_product(product_id):
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+# Cart and Order Routes
+
 @app.route('/api/categories', methods=['GET'])
 def get_categories():
-    categories = execute_query("SELECT * FROM CATEGORY", fetch_all=True)
+    # Fetch distinct category names from the PRODUCT table
+    categories = execute_query("""
+        SELECT DISTINCT CATEGORY_NAME
+        FROM PRODUCT
+        ORDER BY CATEGORY_NAME
+    """, fetch_all=True)
+    # ... (error handling and response) ...
     return jsonify({"success": True, "categories": categories})
-
-# Cart and Order Routes
 
 @app.route('/api/orders', methods=['POST'])
 def create_order():
