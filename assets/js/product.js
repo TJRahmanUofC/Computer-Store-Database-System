@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 } else {
                     stockStatusElement.textContent = "Stock: Out of Stock";
                     stockAvailableElement.textContent = ''; // Clear available count
-                    stockAvailableElement.style.display = 'none'; // Hide span if 0 stock
+                    stockAvailableElement.style.display = '0'; // Hide span if 0 stock
                 }
 
                 // Set the max value for the quantity input and handle 0 stock case
