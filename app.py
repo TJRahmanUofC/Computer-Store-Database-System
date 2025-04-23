@@ -568,10 +568,18 @@ def add_to_cart():
     data = request.json
     product_id = data.get('productId')
 
-    # Check if the product exists and is in stock
-    product = execute_query("SELECT * FROM PRODUCT WHERE PRODUCTID = %s", [product_id])
-    if not product or product['NO_OF_PRODUCTS'] <= 0:
-        return jsonify({"success": False, "message": "Product not available"}), 400
+    # Get quantity from request, default to 1 if not provided or invalid
+    try:
+        quantity_to_add = int(data.get('quantity', 1))
+        if quantity_to_add <= 0:
+            quantity_to_add = 1 # Ensure at least 1 is added
+    except (ValueError, TypeError):
+        quantity_to_add = 1
+ 
+     # Check if the product exists
+    product = execute_query("SELECT PRODUCTID, NAME, NO_OF_PRODUCTS FROM PRODUCT WHERE PRODUCTID = %s", [product_id])
+    if not product:
+         return jsonify({"success": False, "message": "Product not found"}), 404
 
     # Initialize cart in session if not already present
     if 'cart' not in session:
@@ -579,16 +587,43 @@ def add_to_cart():
 
     # Check if the product is already in the cart
     cart = session['cart']
+    current_cart_quantity = 0
+    item_found = False
+
+
     for item in cart:
         if item['productId'] == product_id:
-            item['quantity'] += 1
-            session.modified = True
-            return jsonify({"success": True, "message": "Product quantity updated in cart"})
+            current_cart_quantity = item['quantity']
+            item_found = True
+            break
+    
+        # Check stock availability (requested quantity + current cart quantity vs available stock)
+    total_quantity_needed = current_cart_quantity + quantity_to_add
+    if product['NO_OF_PRODUCTS'] < total_quantity_needed:
+         available_stock = product['NO_OF_PRODUCTS']
+         can_add = available_stock - current_cart_quantity
+         message = f"Insufficient stock for {product['NAME']}. Available: {available_stock}. You have {current_cart_quantity} in cart."
+         if can_add > 0:
+              message += f" You can add {can_add} more."
+         else:
+              message += " Cannot add more."
+         return jsonify({"success": False, "message": message}), 400
+ 
+     # Update quantity if item exists, otherwise add new item
+    if item_found:
+         for item in cart:
+             if item['productId'] == product_id:
+                 item['quantity'] += quantity_to_add
+                 break
+    else:
+         cart.append({"productId": product_id, "quantity": quantity_to_add})
+    
 
     # Add new product to the cart
-    cart.append({"productId": product_id, "quantity": 1})
+    
     session.modified = True
-    return jsonify({"success": True, "message": "Product added to cart"})
+    return jsonify({"success": True, "message": f"{quantity_to_add} item(s) added/updated in cart"})
+
 
 @app.route('/api/cart/count', methods=['GET'])
 def get_cart_count():
@@ -997,50 +1032,117 @@ def admin_get_employees():
 @app.route('/api/admin/employees', methods=['POST'])
 def admin_add_employee():
     if 'admin' not in session or session['admin']['role'].lower() != 'manager':
-        return jsonify({"success": False, "message": "Admin login required"}), 401
+        return jsonify({"success": False, "message": "Manager role required"}), 403
 
     data = request.json
     ssn = data.get('SSN')
-    name = data.get('NAME')
-    phone = data.get('PHONE') or None
-    address = data.get('ADDRESS')
     role = data.get('ROLE')
     employee_id = data.get('EMPLOYEE_ID')
     store_id = data.get('STOREID')
 
-    # Default password
-    default_password = "password"
-    password_hash = hashlib.sha256(default_password.encode('utf-8')).hexdigest()
+    # Basic validation (only for required fields)
+    if not all([ssn, role, employee_id, store_id]):
+        return jsonify({"success": False, "message": "Missing required employee fields"}), 400
 
+    # Optional fields
+    password = "password"
+    password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+    connection = None
+    cursor = None
     try:
-        # Step 1: Add to PERSON
-        execute_query(
-            "INSERT INTO PERSON (SSN, NAME, PHONE, ADDRESS) VALUES (%s, %s, %s, %s)",
-            [ssn, name, phone, address],
-            commit=True
-        )
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        connection.start_transaction()
 
-        # Step 2: Add to EMPLOYEE
-        execute_query(
+        # ✅ Check if the SSN exists in PERSON table first
+        cursor.execute("SELECT SSN FROM PERSON WHERE SSN = %s", [ssn])
+        existing_person = cursor.fetchone()
+        if not existing_person:
+            connection.rollback()
+            return jsonify({"success": False, "message": f"SSN {ssn} does not exist in PERSON table. Please add person first."}), 400
+
+        # ✅ Now insert into EMPLOYEE only
+        cursor.execute(
             "INSERT INTO EMPLOYEE (EMPLOYEE_ID, SSN, ROLE, STOREID, PASSWORD_HASH) VALUES (%s, %s, %s, %s, %s)",
-            [employee_id, ssn, role, store_id, password_hash],
-            commit=True
+            [employee_id, ssn, role, store_id, password_hash]
         )
 
-        return jsonify({"success": True, "message": "Employee added successfully"})
+        connection.commit()
+        return jsonify({"success": True, "message": "Employee added successfully (linked to existing person). Default password is 'password'."})
+
+    except mysql.connector.Error as err:
+        if connection: connection.rollback()
+        if err.errno == 1062:
+            if 'EMPLOYEE_ID' in err.msg:
+                return jsonify({"success": False, "message": f"Employee ID {employee_id} already exists."}), 409
+        print(f"MySQL error: {err}")
+        return jsonify({"success": False, "message": f"MySQL error: {err.msg}"}), 500
     except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
+        if connection: connection.rollback()
+        print(f"Unexpected error: {e}")
+        return jsonify({"success": False, "message": f"Unexpected error: {str(e)}"}), 500
+    finally:
+        if cursor: cursor.close()
+        if connection: connection.close()
+
 
 @app.route('/api/admin/employees/<int:employee_id>', methods=['DELETE'])
 def admin_remove_employee(employee_id):
     if 'admin' not in session or session['admin']['role'].lower() != 'manager':
-        return jsonify({"success": False, "message": "Admin login required"}), 401
+        return jsonify({"success": False, "message": "Manager role required"}), 403
 
+    connection = None
+    cursor = None
     try:
-        execute_query("DELETE FROM EMPLOYEE WHERE EMPLOYEE_ID = %s", [employee_id], commit=True)
+        connection = cnxpool.get_connection()
+        cursor = connection.cursor(dictionary=True)
+        connection.start_transaction()
+
+        # Step 1: Get SSN of the employee
+        cursor.execute("SELECT SSN FROM EMPLOYEE WHERE EMPLOYEE_ID = %s", [employee_id])
+        employee = cursor.fetchone()
+        if not employee:
+            connection.rollback()
+            return jsonify({"success": False, "message": "Employee not found"}), 404
+
+        ssn = employee['SSN']
+
+        # Step 2: Nullify foreign keys that reference EMPLOYEE_ID (if nullable)
+        cursor.execute("UPDATE ORDERS SET EMPLOYEE_ID = NULL WHERE EMPLOYEE_ID = %s", [employee_id])
+        cursor.execute("UPDATE UPDATES SET EMPLOYEE_ID = NULL WHERE EMPLOYEE_ID = %s", [employee_id])
+
+        # Step 3: Delete from EMPLOYEE
+        cursor.execute("DELETE FROM EMPLOYEE WHERE EMPLOYEE_ID = %s", [employee_id])
+        if cursor.rowcount == 0:
+            connection.rollback()
+            return jsonify({"success": False, "message": "Failed to delete employee"}), 500
+
+        # Step 4: Check if SSN is used in CUSTOMER
+        cursor.execute("SELECT 1 FROM CUSTOMER WHERE SSN = %s", [ssn])
+        customer_exists = cursor.fetchone()
+
+        if not customer_exists:
+            # Only delete PERSON if not used in CUSTOMER
+            cursor.execute("DELETE FROM PERSON WHERE SSN = %s", [ssn])
+            if cursor.rowcount == 0:
+                print(f"Warning: PERSON with SSN {ssn} not deleted")
+
+        connection.commit()
         return jsonify({"success": True, "message": "Employee deleted successfully"})
+
+    except mysql.connector.Error as err:
+        if connection: connection.rollback()
+        print(f"Database error: {err}")
+        return jsonify({"success": False, "message": f"MySQL error: {err.msg}"}), 500
     except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
+        if connection: connection.rollback()
+        print(f"Unexpected error: {e}")
+        return jsonify({"success": False, "message": f"Unexpected error: {str(e)}"}), 500
+    finally:
+        if cursor: cursor.close()
+        if connection: connection.close()
+
 
 @app.route('/api/admin/change-password', methods=['POST'])
 def admin_change_password():

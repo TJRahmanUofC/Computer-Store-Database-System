@@ -18,6 +18,17 @@
         </nav>
     </header>
 
+    <!-- Add New Delivery Section -->
+    <section class="add-delivery">
+        <h2>Deliveries</h2>
+        <form id="new-delivery-form">
+            <label for="supplier-select">Supplier:</label>
+            <select id="supplier-select" name="supplier_id" required>
+                <!-- Options will be populated by JS -->
+            </select>
+        </form>
+    </section>
+
     <!-- Supplier Management Section -->
     <section class="supplier-management">
         <h2>Supplier Deliveries</h2>
@@ -30,23 +41,6 @@
             <p>No accepted deliveries yet.</p>
         </div>
     </section>
-
-    <!-- Add New Delivery Section -->
-    <section class="add-delivery-form">
-        <h2>Add New Delivery</h2>
-        <form id="new-delivery-form">
-            <label for="supplier-select">Supplier:</label>
-            <select id="supplier-select" required>
-                <option value="">-- Select Supplier --</option>
-            </select>
-
-            <label for="delivery-date">Delivery Date:</label>
-            <input type="date" id="delivery-date" required />
-
-            <button type="submit">Add Delivery</button>
-        </form>
-    </section>
-
 
     <!-- Footer -->
     <footer>

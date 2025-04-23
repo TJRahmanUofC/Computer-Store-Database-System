@@ -99,8 +99,8 @@ document.addEventListener("DOMContentLoaded", function () {
             event.preventDefault();
 
             const phoneInput = document.getElementById("employee-phone").value;
-            if (phoneInput.length !== 10) {
-                alert("Phone number must be exactly 10 digits.");
+            if (phoneInput && phoneInput.length !== 10) {
+                alert("Phone number must be exactly 10 digits or leave it blank.");
                 return;
             }
 
