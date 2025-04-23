@@ -84,13 +84,24 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
             }
 
+            // Append the block to the correct container
             targetContainer.appendChild(deliveryBlock);
-
-            // Remove placeholder if necessary
-            if (isDelivered && acceptedDeliveriesContainer.querySelector("p")) {
-                acceptedDeliveriesContainer.querySelector("p").remove();
-            }
         });
+
+        // After processing all deliveries, manage placeholders
+        if (supplierDeliveriesContainer.children.length === 0) {
+            supplierDeliveriesContainer.innerHTML = "<p>No pending or arrived deliveries.</p>";
+        }
+        if (acceptedDeliveriesContainer.children.length === 0) {
+            // Ensure the placeholder is there if no delivered items were added
+            acceptedDeliveriesContainer.innerHTML = "<p>No accepted deliveries yet.</p>";
+        } else {
+            // If delivered items were added, remove any initial placeholder
+            const placeholder = acceptedDeliveriesContainer.querySelector("p");
+            if (placeholder && placeholder.textContent === "No accepted deliveries yet.") {
+                 placeholder.remove();
+            }
+        }
     }
 
     // Handle new delivery form submission
