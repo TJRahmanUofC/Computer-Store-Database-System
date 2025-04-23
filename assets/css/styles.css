@@ -466,14 +466,6 @@ footer {
     margin: 0.5rem 0;
 }
 
-/* Apply the same color to the available count span */
-.product-info .stock-available {
-    color: #27ae60; /* Green for in stock */
-    font-weight: bold; /* Match the status weight */
-    margin-left: 5px; /* Add a small space */
-}
-
-
 .product-info .stock-status:not(:empty)::before {
     content: "Status: ";
     color: #333;
