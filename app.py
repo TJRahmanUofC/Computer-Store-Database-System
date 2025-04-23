@@ -1,15 +1,19 @@
-# app.py
+# This is a Flask application that serves as a backend for a computer hardware store.
+# It includes user authentication, product management, order processing, and admin functionalities.
+# The application uses MySQL for data storage and supports CORS for cross-origin requests.
+# It also includes connection pooling for efficient database access and uses environment variables for configuration.
+
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
-# from werkzeug.security import generate_password_hash, check_password_hash # Replaced with hashlib
-import hashlib # Added for SHA-256
+import hashlib 
 import os
-from dotenv import load_dotenv # Import load_dotenv
+from dotenv import load_dotenv 
 from datetime import datetime
 import random
+import hashlib
 import mysql.connector
-from mysql.connector import pooling # Import pooling for connection pooling
-from flask import send_from_directory # Import send_from_directory
+from mysql.connector import pooling 
+from flask import send_from_directory 
 
 load_dotenv() # Load environment variables from .env file
 
@@ -41,9 +45,11 @@ dbconfig = {
     "database": app.config['MYSQL_DB']
 }
 
+# Create a connection pool for MySQL
+# This allows multiple connections to be reused, improving performance.
 cnxpool = pooling.MySQLConnectionPool(
     pool_name="mypool",
-    pool_size=10,  # You can increase this based on expected concurrency
+    pool_size=10,  
     **dbconfig
 )
 
@@ -71,21 +77,24 @@ def execute_query(query, params=None, fetch_all=False, commit=False):
             cursor.close()
         if connection:
             connection.close()
-# --- HTML Serving Routes ---
 
 # --- HTML Serving Routes ---
 
 @app.route('/')
 def serve_index():
     # Serve index.html from the project root
+    # This is the main entry point for the application.
+    # It can be used to serve the main HTML file for the application.
     return send_from_directory('.', 'index.html')
 
 @app.route('/customer/<path:filename>')
 def serve_customer_html(filename):
     # Serves HTML files from the customer directory
+    # This is used to serve customer-specific HTML files.
+    # The filename is passed as a parameter to the function.
     return send_from_directory('customer', filename)
 
-# Add routes for other top-level HTML if needed, or structure differently
+
 
 # --- API Routes ---
 
@@ -105,9 +114,7 @@ def register():
     if existing_user:
         return jsonify({"success": False, "message": "Email already registered"}), 400
 
-    # Generate synthetic SSN (simple approach for demonstration)
-    # In a real app, ensure uniqueness and better generation
-    import hashlib
+
     synthetic_ssn_str = hashlib.sha256(email.encode()).hexdigest()[:8]
     synthetic_ssn = int(synthetic_ssn_str, 16) % 1000000000 # Convert hex substring to int
 
@@ -134,16 +141,15 @@ def register():
         return jsonify({"success": True, "message": "Registration successful"}), 201
         
     except Exception as e:
-        # Consider rolling back PERSON insert if CUSTOMER insert fails
         print(f"Registration error: {e}")
         # Check for duplicate SSN specifically if that's a constraint violation
         if 'Duplicate entry' in str(e) and 'for key \'PRIMARY\'' in str(e) and 'PERSON' in str(e):
              return jsonify({"success": False, "message": "Failed to generate unique identifier. Please try again or contact support."}), 500
         elif 'Duplicate entry' in str(e) and 'for key \'PRIMARY\'' in str(e) and 'CUSTOMER' in str(e):
-             # This case should be caught by the initial email check, but handle defensively
              return jsonify({"success": False, "message": "Email already registered."}), 400
         return jsonify({"success": False, "message": f"An internal error occurred: {str(e)}"}), 500
 
+# --- Login and Logout Routes ---
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
@@ -194,11 +200,13 @@ def logout():
     session.pop('user', None)
     return jsonify({"success": True})
 
+#User routes
 @app.route('/api/user', methods=['GET'])
 def get_user():
     if 'user' in session:
         return jsonify({"success": True, "user": session['user']})
     return jsonify({"success": False, "message": "Not logged in"}), 401
+
 
 @app.route('/api/user/change-password', methods=['POST'])
 def user_change_password():
@@ -440,10 +448,6 @@ def create_order():
         if cursor:
             cursor.close()
         if connection:
-            # Manually commit here since we didn't use the helper's commit flag
-            # and didn't use connection.commit() above because we need it after session pop
-            # In a real transactional setup, commit would happen before session pop.
-            # For this non-transactional approach, we commit changes made so far.
             connection.commit()
             connection.close()
 
@@ -1055,14 +1059,14 @@ def admin_add_employee():
         cursor = connection.cursor(dictionary=True)
         connection.start_transaction()
 
-        # ✅ Check if the SSN exists in PERSON table first
+        # Check if the SSN exists in PERSON table first
         cursor.execute("SELECT SSN FROM PERSON WHERE SSN = %s", [ssn])
         existing_person = cursor.fetchone()
         if not existing_person:
             connection.rollback()
             return jsonify({"success": False, "message": f"SSN {ssn} does not exist in PERSON table. Please add person first."}), 400
 
-        # ✅ Now insert into EMPLOYEE only
+        # Now insert into EMPLOYEE only
         cursor.execute(
             "INSERT INTO EMPLOYEE (EMPLOYEE_ID, SSN, ROLE, STOREID, PASSWORD_HASH) VALUES (%s, %s, %s, %s, %s)",
             [employee_id, ssn, role, store_id, password_hash]
