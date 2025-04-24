@@ -1,0 +1,119 @@
+# Computer Store Database System - Setup and Run Instructions
+
+This guide provides instructions on how to set up and run the Computer Store Database System application on different operating systems.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+1.  **Python 3**: Download and install Python 3 from [python.org](https://www.python.org/). Verify the installation by running `python --version` or `python3 --version` in your terminal.
+2.  **pip**: Python's package installer. It usually comes with Python 3. Verify by running `pip --version` or `pip3 --version`.
+3.  **MySQL Server**: Download and install MySQL Community Server from [dev.mysql.com/downloads/mysql/](https://dev.mysql.com/downloads/mysql/). During installation, remember the root password you set.
+4.  **Git**: (Optional, but recommended for cloning) Download and install Git from [git-scm.com](https://git-scm.com/).
+
+## Setup Steps
+
+1.  **Clone the Repository (if applicable)**
+    If you are using the code as a zip file, extract it. If it's a Git repository:
+    ```bash
+    git clone <repository_url>
+    cd Computer-Store-Database-System
+    ```
+    *(Replace `<repository_url>` with the actual URL)*
+
+2.  **Create and Activate a Virtual Environment**
+    It's highly recommended to use a virtual environment to manage project dependencies.
+
+    *   **Windows (cmd/powershell):**
+        ```bash
+        python -m venv venv
+        .\venv\Scripts\activate
+        ```
+    *   **macOS/Linux (bash/zsh):**
+        ```bash
+        python3 -m venv venv
+        source venv/bin/activate
+        ```
+    You should see `(venv)` at the beginning of your terminal prompt.
+
+3.  **Install Python Dependencies**
+    Install the required Python packages using pip:
+    ```bash
+    pip install -r requirement.txt
+    ```
+
+4.  **Set up the MySQL Database**
+    *   Log in to your MySQL server as the root user (or another user with privileges to create databases and users). You might use the command line client or a GUI tool like MySQL Workbench.
+        ```bash
+        # Example using command line client (replace 'root' if needed)
+        mysql -u root -p
+        ```
+        Enter your MySQL root password when prompted.
+    *   Create the database:
+        ```sql
+        CREATE DATABASE Computer_Hardware_Store CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        ```
+    *   (Optional but Recommended) Create a dedicated user for the application:
+        ```sql
+        -- Replace 'your_db_user' and 'your_db_password' with secure credentials
+        CREATE USER 'your_db_user'@'localhost' IDENTIFIED BY 'your_db_password';
+        GRANT ALL PRIVILEGES ON Computer_Hardware_Store.* TO 'your_db_user'@'localhost';
+        FLUSH PRIVILEGES;
+        ```
+    *   Exit the MySQL prompt:
+        ```sql
+        EXIT;
+        ```
+    *   Import the database schema and data from the `.sql` file. Navigate to the project directory in your terminal if you aren't already there.
+        ```bash
+        # Replace 'root' and provide password, or use 'your_db_user' if created
+        mysql -u root -p Computer_Hardware_Store < Computer_Hardware_Store.sql
+        # OR if you created a specific user:
+        # mysql -u your_db_user -p Computer_Hardware_Store < Computer_Hardware_Store.sql
+        ```
+        Enter the appropriate password when prompted.
+
+5.  **Create the `.env` Configuration File**
+    Create a file named `.env` in the root directory of the project (`d:/Project/Computer-Store-Database-System`). Add the following lines, replacing the placeholder values with your actual MySQL connection details:
+
+    ```env
+    MYSQL_HOST=localhost
+    MYSQL_USER=your_db_user  # Or 'root' if you didn't create a specific user
+    MYSQL_PASSWORD=your_db_password # The password you set for the user
+    MYSQL_DB=Computer_Hardware_Store
+    ```
+
+## Running the Application
+
+1.  **Ensure your virtual environment is activated.** (See Step 2 in Setup)
+2.  **Navigate to the project's root directory** in your terminal (`d:/Project/Computer-Store-Database-System`).
+3.  **Run the Flask application:**
+    *   **Windows:**
+        ```bash
+        python app.py
+        ```
+    *   **macOS/Linux:**
+        ```bash
+        python3 app.py
+        ```
+4.  The terminal will show output indicating the server is running, typically including something like:
+    ```
+     * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+     * Restarting with stat
+     * Debugger is active!
+     * Debugger PIN: ...
+    ```
+5.  **Access the Application:**
+    Open your web browser and navigate to the URL shown in the terminal after running `python app.py`. This is typically `http://127.0.0.1:5000/` or `http://localhost:5000/`.
+
+    *Note: If you are using a separate tool like VS Code's Live Server extension to view the HTML files directly, it might open on a different port (like 5500). However, for the application to function correctly (including login, product loading, etc.), you must run the `python app.py` backend server and access the site through the URL it provides (usually 5000).*
+
+## Stopping the Application
+
+Press `CTRL+C` in the terminal where the application is running.
+
+## Deactivating the Virtual Environment
+
+When you are finished working on the project, you can deactivate the virtual environment:
+```bash
+deactivate

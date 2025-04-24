@@ -7,9 +7,19 @@ document.addEventListener("DOMContentLoaded", function () {
     // Function to fetch cart and display order summary
     function fetchAndDisplayOrderSummary() {
         fetch('http://127.0.0.1:5000/api/cart', { method: 'GET', credentials: 'include' })
-            .then(response => response.json())
+            .then(response => {
+                // Removed the 401 check as per user request.
+                // Assuming server-side checks prevent access to checkout.html itself if not logged in.
+                if (!response.ok) { // Check for other HTTP errors (like 500)
+                     console.error("HTTP error fetching cart:", response.status, response.statusText);
+                     // Throw an error to be caught by the .catch block
+                     throw new Error(`HTTP error ${response.status}`);
+                }
+                return response.json(); // Proceed to parse JSON if response is OK (2xx)
+            })
             .then(data => {
-                if (data.success && data.cart) {
+                // This block only runs if the response was OK (2xx) and JSON parsed successfully
+                if (data.success && data.cart) { // We might not even need data.success check if response.ok was sufficient
                     currentCartItems = data.cart; // Store fetched items
                     orderItemsContainer.innerHTML = ""; // Clear previous items
                     let total = 0;
@@ -38,10 +48,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     orderItemsContainer.innerHTML = "<p>Could not load cart details.</p>";
                     orderTotalElement.textContent = "0.00";
                     placeOrderButton.disabled = true;
-                    console.error("Failed to load cart for checkout:", data.message);
+                    // It's good practice to still check data.success in case the API logic changes
+                    console.error("Failed to load cart for checkout (API reported error):", data.message);
                 }
             })
             .catch(error => {
+                // Handle errors (network, HTTP errors thrown above, JSON parsing errors)
                 orderItemsContainer.innerHTML = "<p>Error loading cart details.</p>";
                 orderTotalElement.textContent = "0.00";
                 placeOrderButton.disabled = true;

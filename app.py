@@ -64,9 +64,20 @@ def execute_query(query, params=None, fetch_all=False, commit=False):
 
         if commit:
             connection.commit()
-            return cursor.lastrowid
-
-        return cursor.fetchall() if fetch_all else cursor.fetchone()
+            result = cursor.lastrowid
+            # Consume any potential leftover results after commit
+            # This handles cases where UPDATE/INSERT might implicitly return something
+            # or if stored procedures are used.
+            while cursor.nextset(): pass
+            return result
+        elif fetch_all:
+            result = cursor.fetchall()
+            return result
+        else:
+            result = cursor.fetchone()
+            # If fetchone() was used, normally it consumes the row.
+            # No explicit consumption needed here unless error persists.
+            return result
 
     except Exception as e:
         print(f"Database error: {e}")
@@ -94,7 +105,10 @@ def serve_customer_html(filename):
     # The filename is passed as a parameter to the function.
     return send_from_directory('customer', filename)
 
-
+@app.route('/admin/<path:filename>')
+def serve_admin_html(filename):
+    # Serves HTML files from the admin directory
+    return send_from_directory('admin', filename)
 
 # --- API Routes ---
 
