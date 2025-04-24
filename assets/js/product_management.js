@@ -111,30 +111,33 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // remove product functionality
             removeProductButton.addEventListener("click", function () {
-                if (confirm(`Are you sure you want to remove ${product.NAME}?`)) {
-                    fetch(`http://127.0.0.1:5000/api/admin/products/${product.PRODUCTID}`, {
-                        method: "DELETE",
-                        credentials: "include"
+                alert("This feature is under development. The product's stock will be set to 0 instead.");
+                
+                // Set the stock to 0
+                fetch(`http://127.0.0.1:5000/api/admin/products/${product.PRODUCTID}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        name: product.NAME,
+                        price: product.PRICE,
+                        quantity: 0
                     })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert("Product removed successfully!");
-                            productDiv.remove();
-            
-                            // Update the products array and refresh categories
-                            products = products.filter(p => p.PRODUCTID !== product.PRODUCTID);
-                            categories = [...new Set(products.map(p => p.CATEGORY_NAME))];
-                            populateCategoryDropdown();
-                        } else {
-                            alert("Failed to remove product: " + data.message);
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Error removing product:", err);
-                        alert("Error removing product. Try again.");
-                    });
-                }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        product.NO_OF_PRODUCTS = 0;
+                        stockInput.value = 0; // Update the UI
+                        alert("Product stock set to 0 successfully!");
+                    } else {
+                        alert("Failed to update stock: " + data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error updating stock:", err);
+                    alert("Error updating stock. Try again.");
+                });
             });
 
             productListContainer.appendChild(productDiv);
