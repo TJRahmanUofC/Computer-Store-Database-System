@@ -1,4 +1,0 @@
-1.  In the EERD we need to add Order_number in the order table, 
-    as order number is unique and is used to show the order-history.
-
-2.

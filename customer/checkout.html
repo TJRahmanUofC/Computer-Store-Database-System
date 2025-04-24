@@ -11,10 +11,7 @@
         document.addEventListener("DOMContentLoaded", function () {
             let loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
     
-            if (!loggedInUser) {
-                // Redirect to login page and remember where the user was going
-                window.location.href = "login.html?redirect=checkout.html";
-            }
+            
         });
     </script>
 </head>
@@ -26,7 +23,7 @@
             <span class="site-name">Byte Hub</span>
         </div>
         <nav>
-            <a href="../index.html">Home</a>
+            <a href="/">Home</a>
             <a href="product-listing.html">Products</a>
             <a href="order_history.html">Order</a>
             <a href="login.html">Login</a>
@@ -154,4 +151,4 @@
     <script src="../assets/js/checkout.js"></script>
 </body>
 </html>
-``` 
+```
