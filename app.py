@@ -120,7 +120,6 @@ def register():
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
-    phone = data.get('phone') or None
     address = data.get('address')
     
     # Check if email already exists
@@ -138,8 +137,8 @@ def register():
     try:
         # Insert into PERSON table first
         person_id = execute_query(
-            "INSERT INTO PERSON (SSN, NAME, PHONE, ADDRESS, is_synthetic_ssn) VALUES (%s, %s, %s, %s, %s)",
-            [synthetic_ssn, name, phone, address, True],
+            "INSERT INTO PERSON (SSN, NAME, ADDRESS, is_synthetic_ssn) VALUES (%s, %s, %s, %s)",
+            [synthetic_ssn, name, address, True],
             commit=True
         )
         
