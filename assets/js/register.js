@@ -8,13 +8,12 @@ document.addEventListener("DOMContentLoaded", function () {
         const name = document.getElementById("reg-name").value;
         const email = document.getElementById("reg-email").value;
         const password = document.getElementById("reg-password").value;
-        const phone = document.getElementById("reg-phone").value;
         const address = document.getElementById("reg-address").value;
 
         fetch('http://127.0.0.1:5000/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, phone, address })
+            body: JSON.stringify({ name, email, password, address })
         })
             .then(response => response.json())
             .then(data => {
